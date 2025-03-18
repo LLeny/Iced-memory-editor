@@ -1,6 +1,6 @@
 # Iced Memory Editor
 
-A memory editor widget for the [Iced](https://github.com/iced-rs/iced) GUI framework in Rust. This widget allows you to view and edit binary data in a hexadecimal format, similar to traditional hex editors.
+A memory editor widget for the [Iced](https://github.com/iced-rs/iced) GUI framework in Rust.
 
 <p align="center">
     <img src="resources/editor.gif" alt="Editor Preview">
@@ -22,7 +22,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-iced_memory_editor = "0.1.0"
+iced_memory_editor = { git = "https://github.com/LLeny/iced_memory_editor.git" }
 ```
 
 ## License
