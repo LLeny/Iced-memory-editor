@@ -1038,6 +1038,7 @@ where
                             state.start_address = addr;
                         }
                         state.addr_input.focused = false;
+                        publish(self.data_update_message(state, options.row_length));
                         shell.request_redraw();
                     }
                     keyboard::Key::Named(keyboard::key::Named::Escape) => {
