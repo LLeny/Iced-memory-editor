@@ -46,7 +46,6 @@ pub(crate) struct State {
     pub(crate) focused: bool,
     pub(crate) text_defaults: Text,
     pub(crate) options_open: bool,
-    pub(crate) data: Vec<u8>,
     pub(crate) start_address: usize,
     pub(crate) selected_address: Option<usize>,
     pub(crate) dimensions: DimensionsState,
@@ -91,7 +90,6 @@ impl Default for State {
                 wrapping: Wrapping::None,
             },
             options_open: false,
-            data: Vec::new(),
             bounds: BoundsState {
                 options: Rectangle::default(),
                 addr_input: Rectangle::default(),

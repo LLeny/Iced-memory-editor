@@ -1,3 +1,4 @@
+use crate::memory::{self, Action};
 use crate::options::{MemoryEditorOptions, PreviewDataFormat};
 use crate::state::State;
 use crate::style::{Catalog, Style};
@@ -7,75 +8,70 @@ use iced::advanced::mouse::Cursor;
 use iced::advanced::renderer::{self, Quad};
 use iced::advanced::text::Paragraph as _;
 use iced::advanced::widget::{self, tree::Tree, Widget};
-use iced::advanced::{mouse, Shell, Text};
+use iced::advanced::{mouse, Text};
 use iced::alignment::Vertical;
 use iced::widget::text::{Alignment, LineHeight, Shaping, Wrapping};
 use iced::{keyboard, Border, Element, Event, Length, Point, Rectangle, Shadow, Size};
+use std::cell::RefCell;
 use std::f32;
-use std::marker::PhantomData;
+use std::ops::Range;
 
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum Message {
-    OptionsToggled,
-    DataUpdated,
+    ActionPerformed(Action),
     RowLengthChanged(usize),
     DataFormatChanged(PreviewDataFormat),
     ShowAsciiToggled(bool),
+    OptionsToggled,
 }
 
-pub struct MemoryEditor<'a, T, Theme, Renderer>
+pub struct Content<M: memory::MemoryEditorContext>(RefCell<Internal<M>>);
+
+struct Internal<M>
 where
-    Renderer: renderer::Renderer + iced::advanced::text::Renderer<Font = iced::Font>,
-    Theme: Catalog + iced::widget::text::Catalog,
+    M: memory::MemoryEditorContext,
 {
-    data_source: &'a T,
-    read_fn: fn(&T, usize) -> Option<u8>,
-    write_fn: Option<fn(&T, usize, u8)>,
-    options: MemoryEditorOptions,
-    class: <Theme as crate::style::Catalog>::Class<'a>,
-    messages: Vec<Message>,
-    _renderer: PhantomData<Renderer>,
+    context: M,
+    is_dirty: bool,
 }
 
-impl<'a, T, Theme, Renderer> MemoryEditor<'a, T, Theme, Renderer>
+impl<M> Content<M>
 where
-    Theme: Catalog + iced::widget::text::Catalog + 'a,
-    Renderer: renderer::Renderer + iced::advanced::text::Renderer<Font = iced::Font> + 'a,
+    M: memory::MemoryEditorContext,
 {
-    pub fn new(data_source: &'a T, read_fn: fn(&T, usize) -> Option<u8>) -> Self {
+    pub fn new(context: M) -> Self {
+        Self(RefCell::new(Internal {
+            context,
+            is_dirty: true,
+        }))
+    }
+
+    pub fn perform(&mut self, action: Action) {
+        let internal = self.0.get_mut();
+        internal.context.perform(action);
+        internal.is_dirty = false;
+    }
+}
+
+pub struct MemoryEditor<'a, T, M>
+where
+    T: Catalog + iced::widget::text::Catalog,
+    M: memory::MemoryEditorContext,
+{
+    content: &'a Content<M>,
+    class: <T as crate::style::Catalog>::Class<'a>,
+}
+
+impl<'a, T, M> MemoryEditor<'a, T, M>
+where
+    T: Catalog + iced::widget::text::Catalog + 'a,
+    M: memory::MemoryEditorContext,
+{
+    pub fn new(content: &'a Content<M>) -> Self {
         MemoryEditor {
-            read_fn,
-            write_fn: None,
-            messages: vec![Message::DataUpdated],
-            options: MemoryEditorOptions::default(),
-            data_source,
-            class: <Theme as crate::style::Catalog>::default(),
-            _renderer: PhantomData,
+            class: <T as crate::style::Catalog>::default(),
+            content,
         }
-    }
-
-    pub fn data_updated(&mut self) {
-        self.messages.push(Message::DataUpdated);
-    }
-
-    pub(crate) fn with_write(mut self, write_fn: fn(&T, usize, u8)) -> Self {
-        self.set_write(write_fn);
-        self
-    }
-
-    pub(crate) fn set_write(&mut self, write_fn: fn(&T, usize, u8)) {
-        self.write_fn = Some(write_fn);
-        todo!();
-    }
-
-    pub(crate) fn with_options(mut self, options: MemoryEditorOptions) -> Self {
-        self.set_options(options);
-        self
-    }
-
-    pub(crate) fn set_options(&mut self, options: MemoryEditorOptions) {
-        self.options = options;
-        todo!();
     }
 
     fn format_preview_value(&self, data: &[u8], format: &PreviewDataFormat) -> String {
@@ -97,18 +93,12 @@ where
         }
     }
 
-    fn update_data(&self, state: &mut State) {
-        let start = state.start_address;
-        for (i, byte) in state.data.iter_mut().enumerate() {
-            *byte = (self.read_fn)(self.data_source, start + i).unwrap_or(0xff);
-        }
-    }
-
     fn handle_mouse_interaction(
         &mut self,
         state: &mut State,
         cursor: Cursor,
         bounds: Rectangle,
+        options: &MemoryEditorOptions,
     ) -> (bool, Option<Message>) {
         if state.addr_input.focused {
             state.addr_input.focused = false;
@@ -132,45 +122,38 @@ where
 
         if state.options_open {
             if cursor.is_over(state.bounds.show_ascii_checkbox) {
-                return (
-                    true,
-                    Some(Message::ShowAsciiToggled(!self.options.show_ascii)),
-                );
+                return (true, Some(Message::ShowAsciiToggled(!options.show_ascii)));
             }
 
             if cursor.is_over(state.bounds.prev_format) {
-                self.options.previous_data_format();
                 return (
                     true,
-                    Some(Message::DataFormatChanged(self.options.preview_data_format)),
+                    Some(Message::DataFormatChanged(options.previous_data_format())),
                 );
             }
 
             if cursor.is_over(state.bounds.next_format) {
-                self.options.next_data_format();
                 return (
                     true,
-                    Some(Message::DataFormatChanged(self.options.preview_data_format)),
+                    Some(Message::DataFormatChanged(options.next_data_format())),
                 );
             }
 
             if cursor.is_over(state.bounds.prev_row_length) {
-                self.options.row_length = (self.options.row_length - 8).max(8);
                 return (
                     true,
-                    Some(Message::RowLengthChanged(self.options.row_length)),
+                    Some(Message::RowLengthChanged((options.row_length - 8).max(8))),
                 );
             }
 
             if cursor.is_over(state.bounds.next_row_length) {
-                self.options.row_length += 8;
                 return (
                     true,
-                    Some(Message::RowLengthChanged(self.options.row_length)),
+                    Some(Message::RowLengthChanged(options.row_length + 8)),
                 );
             }
         }
-        
+
         let row_index = ((position.y - bounds.y) / state.dimensions.char_height).trunc() as usize;
         if row_index >= state.dimensions.row_count {
             return (false, None);
@@ -182,13 +165,12 @@ where
         }
 
         let byte_index = self.calculate_byte_index(x_in_data, state);
-        if byte_index >= self.options.row_length {
+        if byte_index >= options.row_length {
             state.selected_address = None;
             return (true, None);
         }
 
-        let clicked_address =
-            state.start_address + (row_index * self.options.row_length) + byte_index;
+        let clicked_address = state.start_address + (row_index * options.row_length) + byte_index;
         state.selected_address = Some(clicked_address);
         (true, None)
     }
@@ -201,9 +183,9 @@ where
         (total_x / byte_slot_width) as usize
     }
 
-    fn background(&self, renderer: &mut Renderer, style: &Style, bounds: Rectangle)
+    fn background<R>(&self, renderer: &mut R, style: &Style, bounds: Rectangle)
     where
-        Renderer: renderer::Renderer,
+        R: renderer::Renderer,
     {
         renderer.fill_quad(
             renderer::Quad {
@@ -215,9 +197,9 @@ where
         );
     }
 
-    fn separator(&self, renderer: &mut Renderer, style: &Style, bounds: Rectangle, x: f32)
+    fn separator<R>(&self, renderer: &mut R, style: &Style, bounds: Rectangle, x: f32)
     where
-        Renderer: renderer::Renderer,
+        R: renderer::Renderer,
     {
         renderer.fill_quad(
             renderer::Quad {
@@ -234,16 +216,17 @@ where
         );
     }
 
-    fn row(
+    fn row<R>(
         &self,
-        renderer: &mut Renderer,
+        renderer: &mut R,
         style: &Style,
         bounds: Rectangle,
         state: &State,
         addr: &usize,
         row_data: &[u8],
+        options: &MemoryEditorOptions,
     ) where
-        Renderer: renderer::Renderer + iced::advanced::text::Renderer<Font = iced::Font>,
+        R: renderer::Renderer + iced::advanced::text::Renderer<Font = iced::Font>,
     {
         renderer.fill_text(
             Text {
@@ -302,7 +285,7 @@ where
             }
         }
 
-        if self.options.show_ascii {
+        if options.show_ascii {
             x_offset = state.dimensions.section_ascii_start;
 
             let ascii_string: String = row_data
@@ -330,7 +313,7 @@ where
             );
 
             if let Some(selected_addr) = state.selected_address {
-                if selected_addr >= *addr && selected_addr < addr + self.options.row_length {
+                if selected_addr >= *addr && selected_addr < addr + options.row_length {
                     let ascii_x = state.dimensions.section_ascii_start
                         + ((selected_addr - addr) as f32 * state.dimensions.char_width);
 
@@ -352,15 +335,16 @@ where
         }
     }
 
-    fn bottom_panel(
+    fn bottom_panel<R>(
         &self,
         _tree: &widget::Tree,
-        renderer: &mut Renderer,
+        renderer: &mut R,
         state: &State,
         style: &Style,
         bounds: Rectangle,
+        options: &MemoryEditorOptions,
     ) where
-        Renderer: renderer::Renderer + iced::advanced::text::Renderer<Font = iced::Font>,
+        R: renderer::Renderer + iced::advanced::text::Renderer<Font = iced::Font>,
     {
         let panel_bounds = Rectangle {
             y: bounds.y + bounds.height - state.dimensions.char_height * 1.5,
@@ -380,7 +364,6 @@ where
             style.background,
         );
 
-        // Options text
         let panel_options_bounds = Rectangle {
             x: panel_bounds.x,
             y: panel_bounds.y,
@@ -402,7 +385,6 @@ where
             panel_options_bounds,
         );
 
-        // Jump to text
         let jumpto_bounds = Rectangle {
             x: state.bounds.addr_input.x - state.text.jumpto_len - state.dimensions.char_width,
             y: panel_bounds.y,
@@ -463,9 +445,9 @@ where
         if let Some(selected_addr) = state.selected_address {
             if selected_addr >= state.start_address
                 && selected_addr
-                    < state.start_address + state.dimensions.row_count * self.options.row_length
+                    < state.start_address + state.dimensions.row_count * options.row_length
             {
-                let required_bytes = match self.options.preview_data_format {
+                let required_bytes = match options.preview_data_format {
                     PreviewDataFormat::U8 | PreviewDataFormat::I8 => 1,
                     PreviewDataFormat::U16 | PreviewDataFormat::I16 => 2,
                     PreviewDataFormat::U32 | PreviewDataFormat::I32 | PreviewDataFormat::F32 => 4,
@@ -473,7 +455,7 @@ where
                 };
 
                 let mut preview_data = [0u8; 8];
-                if let Some(data_slice) = state.data.get(
+                if let Some(data_slice) = self.content.0.borrow().context.data().get(
                     selected_addr - state.start_address
                         ..selected_addr - state.start_address + required_bytes,
                 ) {
@@ -482,7 +464,7 @@ where
 
                 let value_text = self.format_preview_value(
                     &preview_data[..required_bytes],
-                    &self.options.preview_data_format,
+                    &options.preview_data_format,
                 );
 
                 let value_width = value_text.len() as f32 * state.dimensions.char_width;
@@ -512,14 +494,30 @@ where
         }
     }
 
-    fn options_panel(
+    fn options(&self) -> MemoryEditorOptions {
+        self.content.0.borrow().context.options()
+    }
+
+    fn action_performed(&self, action: Action) -> Message {
+        Message::ActionPerformed(action)
+    }
+
+    fn data_update_message(&self, state: &State, len: usize) -> Message {
+        self.action_performed(Action::DataUpdate(Range::<usize> {
+            start: state.start_address,
+            end: state.start_address + state.dimensions.row_count * len,
+        }))
+    }
+
+    fn options_panel<R>(
         &self,
         tree: &widget::Tree,
-        renderer: &mut Renderer,
-        theme: &Theme,
+        renderer: &mut R,
+        theme: &T,
         layout: Layout<'_>,
+        options: &MemoryEditorOptions,
     ) where
-        Renderer: renderer::Renderer + iced::advanced::text::Renderer<Font = iced::Font>,
+        R: renderer::Renderer + iced::advanced::text::Renderer<Font = iced::Font>,
     {
         let state = tree.state.downcast_ref::<State>();
 
@@ -527,7 +525,7 @@ where
             return;
         }
 
-        let style = <Theme as Catalog>::style(theme, &self.class);
+        let style = <T as Catalog>::style(theme, &self.class);
         let bounds = layout.bounds();
 
         let panel_bounds = Rectangle {
@@ -550,7 +548,6 @@ where
         let label_width = 120.0;
         let offset_y = panel_bounds.y + state.dimensions.char_height * 0.5;
 
-        // Draw row length label
         renderer.fill_text(
             Text {
                 content: "Row length".into(),
@@ -562,7 +559,6 @@ where
             panel_bounds,
         );
 
-        // Draw left arrow button to decrease row length
         renderer.fill_text(
             Text {
                 content: "<".into(),
@@ -577,10 +573,9 @@ where
             state.bounds.prev_row_length,
         );
 
-        // Draw row length value
         renderer.fill_text(
             Text {
-                content: format!("{}", self.options.row_length),
+                content: format!("{}", options.row_length),
                 bounds: Size::new(
                     state.dimensions.char_width * 3.0,
                     state.dimensions.char_height,
@@ -595,7 +590,6 @@ where
             state.bounds.text_row_length,
         );
 
-        // Draw right arrow button to increase row length
         renderer.fill_text(
             Text {
                 content: ">".into(),
@@ -610,7 +604,6 @@ where
             state.bounds.next_row_length,
         );
 
-        // Draw preview data label
         renderer.fill_text(
             Text {
                 content: "Preview data".into(),
@@ -625,7 +618,6 @@ where
             panel_bounds,
         );
 
-        // Draw preview data format
         renderer.fill_text(
             Text {
                 content: "<".into(),
@@ -639,7 +631,7 @@ where
 
         renderer.fill_text(
             Text {
-                content: format!("{}", self.options.preview_data_format),
+                content: format!("{}", options.preview_data_format),
                 bounds: Size::new(
                     state.dimensions.char_width * 3.0,
                     state.dimensions.char_height,
@@ -662,7 +654,6 @@ where
             state.bounds.next_format,
         );
 
-        // Draw show ASCII checkbox
         renderer.fill_text(
             Text {
                 content: "Show ASCII".into(),
@@ -693,7 +684,7 @@ where
             style.background,
         );
 
-        if self.options.show_ascii {
+        if options.show_ascii {
             let padding = checkbox_size * 0.2;
             let inner_bounds = Rectangle {
                 x: checkbox_bounds.x + padding,
@@ -717,12 +708,11 @@ where
     }
 }
 
-impl<'a, Theme, Renderer, T> Widget<Message, Theme, Renderer>
-    for MemoryEditor<'a, T, Theme, Renderer>
+impl<'a, T, R, M> Widget<Message, T, R> for MemoryEditor<'a, T, M>
 where
-    Renderer: renderer::Renderer + iced::advanced::text::Renderer<Font = iced::Font> + 'a,
-    Theme: Catalog + iced::widget::text::Catalog + 'a,
-    T: 'a + Sized,
+    R: renderer::Renderer + iced::advanced::text::Renderer<Font = iced::Font> + 'a,
+    T: Catalog + iced::widget::text::Catalog + 'a,
+    M: memory::MemoryEditorContext,
 {
     fn size(&self) -> Size<Length> {
         Size {
@@ -734,13 +724,13 @@ where
     fn layout(
         &self,
         tree: &mut widget::Tree,
-        renderer: &Renderer,
+        renderer: &R,
         limits: &layout::Limits,
     ) -> layout::Node {
         let state = tree.state.downcast_mut::<State>();
-
         let text_size = renderer.default_size();
         let text_line_height = LineHeight::default();
+        let options = self.options();
 
         state.dimensions.char_height = text_line_height.to_absolute(text_size).into();
         state.dimensions.row_count = (limits.max().height / state.dimensions.char_height).floor()
@@ -772,8 +762,8 @@ where
             * state.dimensions.address_char_len as f32
             + state.dimensions.section_separator_spacing;
         state.dimensions.section_ascii_start = state.dimensions.section_data_start
-            + state.dimensions.byte_width * self.options.row_length as f32
-            + (self.options.row_length as f32 / state.dimensions.group_char_len as f32 - 1.0)
+            + state.dimensions.byte_width * options.row_length as f32
+            + (options.row_length as f32 / state.dimensions.group_char_len as f32 - 1.0)
                 * state.dimensions.group_spacing
             + state.dimensions.section_separator_spacing;
 
@@ -782,13 +772,6 @@ where
         state.dimensions.ascii_separator_x =
             state.dimensions.section_ascii_start - state.dimensions.section_separator_spacing / 2.0;
         state.text.jumpto_len = state.text.jumpto_text.len() as f32 * state.dimensions.char_width;
-
-        let total_bytes = state.dimensions.row_count * self.options.row_length;
-        if state.data.len() != total_bytes {
-            state.data.resize(total_bytes, 0);
-        }
-
-        self.update_data(state);
 
         let options_text = "Options";
         let options_width = options_text.len() as f32 * state.dimensions.char_width;
@@ -883,18 +866,19 @@ where
     fn draw(
         &self,
         tree: &widget::Tree,
-        renderer: &mut Renderer,
-        theme: &Theme,
+        renderer: &mut R,
+        theme: &T,
         _defaults: &renderer::Style,
         layout: Layout<'_>,
         _cursor: iced::advanced::mouse::Cursor,
         _viewport: &Rectangle,
     ) where
-        Theme: Catalog,
+        T: Catalog,
     {
         let state = tree.state.downcast_ref::<State>();
-        let style = <Theme as crate::style::Catalog>::style(theme, &self.class);
+        let style = <T as crate::style::Catalog>::style(theme, &self.class);
         let bounds = layout.bounds();
+        let options = self.options();
 
         self.background(renderer, &style, bounds);
 
@@ -912,7 +896,7 @@ where
             state.dimensions.address_separator_x,
         );
 
-        if self.options.show_ascii {
+        if options.show_ascii {
             self.separator(
                 renderer,
                 &style,
@@ -921,34 +905,40 @@ where
             );
         }
 
-        let mut addr = state.start_address;
-        let mut y_offset = bounds.y;
+        let internal = self.content.0.borrow();
 
-        for row_i in 0..state.dimensions.row_count {
-            let row_start = row_i * self.options.row_length;
-            let row_end = row_start + self.options.row_length;
-            let row_slice = &state.data[row_start..row_end];
+        if !internal.is_dirty {
+            let mut addr = state.start_address;
+            let mut y_offset = bounds.y;
 
-            self.row(
-                renderer,
-                &style,
-                Rectangle {
-                    x: bounds.x,
-                    y: y_offset,
-                    width: bounds.width,
-                    height: state.dimensions.char_height,
-                },
-                state,
-                &addr,
-                row_slice,
-            );
+            for slice in internal
+                .context
+                .data()
+                .chunks_exact(options.row_length)
+                .take(state.dimensions.row_count)
+            {
+                self.row(
+                    renderer,
+                    &style,
+                    Rectangle {
+                        x: bounds.x,
+                        y: y_offset,
+                        width: bounds.width,
+                        height: state.dimensions.char_height,
+                    },
+                    state,
+                    &addr,
+                    slice,
+                    &options,
+                );
 
-            addr += self.options.row_length;
-            y_offset += state.dimensions.char_height;
+                addr += options.row_length;
+                y_offset += state.dimensions.char_height;
+            }
         }
 
-        self.bottom_panel(tree, renderer, state, &style, bounds);
-        self.options_panel(tree, renderer, theme, layout);
+        self.bottom_panel(tree, renderer, state, &style, bounds, &options);
+        self.options_panel(tree, renderer, theme, layout, &options);
     }
 
     fn tag(&self) -> widget::tree::Tag {
@@ -967,7 +957,7 @@ where
         &self,
         _state: &mut widget::Tree,
         _layout: Layout<'_>,
-        _renderer: &Renderer,
+        _renderer: &R,
         _operation: &mut dyn widget::Operation,
     ) {
     }
@@ -978,59 +968,46 @@ where
         event: &Event,
         layout: Layout<'_>,
         cursor: mouse::Cursor,
-        _renderer: &Renderer,
+        _renderer: &R,
         _clipboard: &mut dyn iced::advanced::Clipboard,
         shell: &mut iced::advanced::Shell<'_, Message>,
         _viewport: &Rectangle,
     ) {
         let state = tree.state.downcast_mut::<State>();
         let bounds = layout.bounds();
+        let options = self.options();
 
-        let local_shell = Shell::new(&mut self.messages);
+        let mut publish = |msg| shell.publish(msg);
 
-        if local_shell.is_event_captured() {
-            shell.capture_event();
+        if self.content.0.borrow().context.is_empty() {
+            publish(self.data_update_message(state, options.row_length));
         }
-
-        shell.request_redraw_at(local_shell.redraw_request());
-        shell.request_input_method(local_shell.input_method());
-
-        self.messages
-            .clone()
-            .iter()
-            .for_each(|message| match message {
-                Message::OptionsToggled => {
-                    state.options_open = !state.options_open;
-                    shell.invalidate_layout();
-                    shell.request_redraw();
-                }
-                Message::DataUpdated => {
-                    self.update_data(state);
-                    shell.request_redraw();
-                }
-                Message::RowLengthChanged(len) => {
-                    self.options.row_length = *len;
-                    shell.invalidate_layout();
-                    shell.request_redraw();
-                }
-                Message::DataFormatChanged(format) => {
-                    self.options.preview_data_format = *format;
-                    shell.request_redraw();
-                }
-                Message::ShowAsciiToggled(show) => {
-                    self.options.show_ascii = *show;
-                    shell.invalidate_layout();
-                    shell.request_redraw();
-                }
-            });
-
-        self.messages.clear();
 
         match event {
             Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) => {
-                if let (true, message) = self.handle_mouse_interaction(state, cursor, bounds) {
-                    if let Some(msg) = message {
-                        self.messages.push(msg);
+                if let (true, message) =
+                    self.handle_mouse_interaction(state, cursor, bounds, &options)
+                {
+                    if let Some(message) = message {
+                        match message {
+                            Message::OptionsToggled => {
+                                state.options_open = !state.options_open;
+                                shell.invalidate_layout();
+                            }
+                            Message::RowLengthChanged(len) => {
+                                publish(self.action_performed(Action::RowLengthUpdate(len)));
+                                publish(self.data_update_message(state, len));
+                                shell.invalidate_layout();
+                            }
+                            Message::DataFormatChanged(format) => {
+                                publish(self.action_performed(Action::PreviewFormatUpdate(format)));
+                            }
+                            Message::ShowAsciiToggled(show) => {
+                                publish(self.action_performed(Action::ShowASCIIUpdate(show)));
+                                shell.invalidate_layout();
+                            }
+                            _ => (),
+                        };
                     }
                     shell.request_redraw();
                 }
@@ -1073,13 +1050,13 @@ where
             Event::Mouse(mouse::Event::WheelScrolled {
                 delta: mouse::ScrollDelta::Lines { y, .. },
             }) => {
-                let step = y.trunc() * self.options.row_length as f32;
+                let step = y.trunc() * options.row_length as f32;
                 if step.is_sign_negative() {
                     state.start_address = state.start_address.saturating_sub(step.abs() as usize);
                 } else {
                     state.start_address += step as usize;
                 }
-                self.data_updated();
+                publish(self.data_update_message(state, options.row_length));
             }
             _ => (),
         }
@@ -1091,31 +1068,27 @@ where
         _layout: Layout<'_>,
         _cursor: iced::advanced::mouse::Cursor,
         _viewport: &Rectangle,
-        _renderer: &Renderer,
+        _renderer: &R,
     ) -> iced::advanced::mouse::Interaction {
         mouse::Interaction::default()
     }
 }
 
-impl<'a, Theme, Renderer, T> From<MemoryEditor<'a, T, Theme, Renderer>>
-    for Element<'a, Message, Theme, Renderer>
+impl<'a, T, R, M> From<MemoryEditor<'a, T, M>> for Element<'a, Message, T, R>
 where
-    Renderer: renderer::Renderer + iced::advanced::text::Renderer<Font = iced::Font> + 'a,
-    Theme: Catalog + iced::widget::text::Catalog + 'a,
-    T: 'a + Sized,
+    R: renderer::Renderer + iced::advanced::text::Renderer<Font = iced::Font> + 'a,
+    T: Catalog + iced::widget::text::Catalog + 'a,
+    M: memory::MemoryEditorContext,
 {
-    fn from(memory_editor: MemoryEditor<'a, T, Theme, Renderer>) -> Self {
+    fn from(memory_editor: MemoryEditor<'a, T, M>) -> Self {
         Self::new(memory_editor)
     }
 }
 
-pub fn memory_editor<'a, T, Theme, Renderer>(
-    data_source: &'a T,
-    read_fn: fn(&T, usize) -> Option<u8>,
-) -> MemoryEditor<'a, T, Theme, Renderer>
+pub fn memory_editor<'a, T, M>(content: &'a Content<M>) -> MemoryEditor<'a, T, M>
 where
-    Renderer: renderer::Renderer + iced::advanced::text::Renderer<Font = iced::Font> + 'a,
-    Theme: Catalog + iced::widget::text::Catalog + 'a,
+    T: Catalog + iced::widget::text::Catalog + 'a,
+    M: memory::MemoryEditorContext,
 {
-    MemoryEditor::new(data_source, read_fn)
+    MemoryEditor::new(content)
 }

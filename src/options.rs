@@ -14,25 +14,29 @@ pub enum PreviewDataFormat {
     F32,
     F64,
 }
-   
+
 impl Display for PreviewDataFormat {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", match self {
-            PreviewDataFormat::U8 => "U8",
-            PreviewDataFormat::U16 => "U16",
-            PreviewDataFormat::U32 => "U32",
-            PreviewDataFormat::U64 => "U64",
-            PreviewDataFormat::I8 => "I8",
-            PreviewDataFormat::I16 => "I16",
-            PreviewDataFormat::I32 => "I32",
-            PreviewDataFormat::I64 => "I64",
-            PreviewDataFormat::F32 => "F32",
-            PreviewDataFormat::F64 => "F64",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                PreviewDataFormat::U8 => "U8",
+                PreviewDataFormat::U16 => "U16",
+                PreviewDataFormat::U32 => "U32",
+                PreviewDataFormat::U64 => "U64",
+                PreviewDataFormat::I8 => "I8",
+                PreviewDataFormat::I16 => "I16",
+                PreviewDataFormat::I32 => "I32",
+                PreviewDataFormat::I64 => "I64",
+                PreviewDataFormat::F32 => "F32",
+                PreviewDataFormat::F64 => "F64",
+            }
+        )
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MemoryEditorOptions {
     pub row_length: usize,
     pub preview_data_format: PreviewDataFormat,
@@ -50,8 +54,8 @@ impl Default for MemoryEditorOptions {
 }
 
 impl MemoryEditorOptions {
-    pub fn previous_data_format(&mut self) {
-        self.preview_data_format = match self.preview_data_format {
+    pub fn previous_data_format(&self) -> PreviewDataFormat {
+        match self.preview_data_format {
             PreviewDataFormat::U8 => PreviewDataFormat::F64,
             PreviewDataFormat::U16 => PreviewDataFormat::U8,
             PreviewDataFormat::U32 => PreviewDataFormat::U16,
@@ -62,11 +66,11 @@ impl MemoryEditorOptions {
             PreviewDataFormat::I64 => PreviewDataFormat::I32,
             PreviewDataFormat::F32 => PreviewDataFormat::I64,
             PreviewDataFormat::F64 => PreviewDataFormat::F32,
-        };
+        }
     }
 
-    pub fn next_data_format(&mut self) {
-        self.preview_data_format = match self.preview_data_format {
+    pub fn next_data_format(&self) -> PreviewDataFormat {
+        match self.preview_data_format {
             PreviewDataFormat::U8 => PreviewDataFormat::U16,
             PreviewDataFormat::U16 => PreviewDataFormat::U32,
             PreviewDataFormat::U32 => PreviewDataFormat::U64,
@@ -77,6 +81,7 @@ impl MemoryEditorOptions {
             PreviewDataFormat::I64 => PreviewDataFormat::F32,
             PreviewDataFormat::F32 => PreviewDataFormat::F64,
             PreviewDataFormat::F64 => PreviewDataFormat::U8,
-        };
+        }
     }
 }
+
