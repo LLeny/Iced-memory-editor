@@ -1,4 +1,4 @@
-use crate::memory::{self, Action};
+use crate::context::{self, Action};
 use crate::options::{MemoryEditorOptions, PreviewDataFormat};
 use crate::state::State;
 use crate::style::{Catalog, Style};
@@ -25,11 +25,11 @@ pub enum Message {
     OptionsToggled,
 }
 
-pub struct Content<M: memory::MemoryEditorContext>(RefCell<Internal<M>>);
+pub struct Content<M: context::MemoryEditorContext>(RefCell<Internal<M>>);
 
 struct Internal<M>
 where
-    M: memory::MemoryEditorContext,
+    M: context::MemoryEditorContext,
 {
     context: M,
     is_dirty: bool,
@@ -37,7 +37,7 @@ where
 
 impl<M> Content<M>
 where
-    M: memory::MemoryEditorContext,
+    M: context::MemoryEditorContext,
 {
     pub fn new(context: M) -> Self {
         Self(RefCell::new(Internal {
@@ -56,7 +56,7 @@ where
 pub struct MemoryEditor<'a, T, M>
 where
     T: Catalog + iced::widget::text::Catalog,
-    M: memory::MemoryEditorContext,
+    M: context::MemoryEditorContext,
 {
     content: &'a Content<M>,
     class: <T as crate::style::Catalog>::Class<'a>,
@@ -65,7 +65,7 @@ where
 impl<'a, T, M> MemoryEditor<'a, T, M>
 where
     T: Catalog + iced::widget::text::Catalog + 'a,
-    M: memory::MemoryEditorContext,
+    M: context::MemoryEditorContext,
 {
     pub fn new(content: &'a Content<M>) -> Self {
         MemoryEditor {
@@ -712,7 +712,7 @@ impl<'a, T, R, M> Widget<Message, T, R> for MemoryEditor<'a, T, M>
 where
     R: renderer::Renderer + iced::advanced::text::Renderer<Font = iced::Font> + 'a,
     T: Catalog + iced::widget::text::Catalog + 'a,
-    M: memory::MemoryEditorContext,
+    M: context::MemoryEditorContext,
 {
     fn size(&self) -> Size<Length> {
         Size {
@@ -1079,7 +1079,7 @@ impl<'a, T, R, M> From<MemoryEditor<'a, T, M>> for Element<'a, Message, T, R>
 where
     R: renderer::Renderer + iced::advanced::text::Renderer<Font = iced::Font> + 'a,
     T: Catalog + iced::widget::text::Catalog + 'a,
-    M: memory::MemoryEditorContext,
+    M: context::MemoryEditorContext,
 {
     fn from(memory_editor: MemoryEditor<'a, T, M>) -> Self {
         Self::new(memory_editor)
@@ -1089,7 +1089,7 @@ where
 pub fn memory_editor<'a, T, M>(content: &'a Content<M>) -> MemoryEditor<'a, T, M>
 where
     T: Catalog + iced::widget::text::Catalog + 'a,
-    M: memory::MemoryEditorContext,
+    M: context::MemoryEditorContext,
 {
     MemoryEditor::new(content)
 }

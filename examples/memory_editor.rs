@@ -1,6 +1,6 @@
 use iced::{Element, Theme};
 use iced_memory_editor::{
-    memory,
+    context,
     memory_editor::{memory_editor, Content, Message},
     options::MemoryEditorOptions,
 };
@@ -35,15 +35,15 @@ impl Default for ExampleData {
     }
 }
 
-impl memory::MemoryEditorContext for ExampleData {
-    fn perform(&mut self, action: memory::Action) {
+impl context::MemoryEditorContext for ExampleData {
+    fn perform(&mut self, action: context::Action) {
         match action {
-            memory::Action::DataUpdate(range) => self.range = range,
-            memory::Action::ShowASCIIUpdate(show) => self.options.show_ascii = show,
-            memory::Action::PreviewFormatUpdate(preview_data_format) => {
+            context::Action::DataUpdate(range) => self.range = range,
+            context::Action::ShowASCIIUpdate(show) => self.options.show_ascii = show,
+            context::Action::PreviewFormatUpdate(preview_data_format) => {
                 self.options.preview_data_format = preview_data_format
             }
-            memory::Action::RowLengthUpdate(len) => self.options.row_length = len,
+            context::Action::RowLengthUpdate(len) => self.options.row_length = len,
         }
     }
 
