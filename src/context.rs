@@ -5,7 +5,6 @@ pub trait MemoryEditorContext: Default + Sized {
     fn perform(&mut self, action: Action);
     fn data(&self) -> Vec<u8>;
     fn options(&self) -> MemoryEditorOptions;
-    fn len(&self) -> usize;
     fn is_empty(&self) -> bool;
 }
 

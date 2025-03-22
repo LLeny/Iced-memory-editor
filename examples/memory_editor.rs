@@ -51,12 +51,8 @@ impl context::MemoryEditorContext for ExampleData {
         self.data[self.range.clone()].into()
     }
 
-    fn len(&self) -> usize {
-        self.range.len()
-    }
-
     fn is_empty(&self) -> bool {
-        self.len() == 0
+        self.range.len() == 0
     }
 
     fn options(&self) -> MemoryEditorOptions {
