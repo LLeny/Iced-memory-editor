@@ -104,6 +104,10 @@ where
             state.addr_input.focused = false;
         }
 
+        if state.byte_input.focused {
+            state.byte_input.focused = false;
+        }
+
         if cursor.position().is_none() {
             return (false, None);
         }
@@ -118,6 +122,16 @@ where
             state.addr_input.focused = true;
             state.addr_input.value.clear();
             return (true, None);
+        }
+
+        if let Some(selected_addr) = state.selected_address {
+            if cursor.is_over(state.bounds.byte_input)
+                && self.content.0.borrow().context.can_write(selected_addr)
+            {
+                state.byte_input.focused = true;
+                state.byte_input.value.clear();
+                return (true, None);
+            }
         }
 
         if state.options_open {
@@ -156,22 +170,30 @@ where
 
         let row_index = ((position.y - bounds.y) / state.dimensions.char_height).trunc() as usize;
         if row_index >= state.dimensions.row_count {
-            return (false, None);
+            state.selected_address = None;
+            state.text.value_text.clear();
+            return (true, None);
         }
 
         let x_in_data = position.x - (bounds.x + state.dimensions.section_data_start);
         if x_in_data < 0.0 {
-            return (false, None);
+            state.selected_address = None;
+            state.text.value_text.clear();
+            return (true, None);
         }
 
         let byte_index = self.calculate_byte_index(x_in_data, state);
         if byte_index >= options.row_length {
             state.selected_address = None;
+            state.text.value_text.clear();
             return (true, None);
         }
 
         let clicked_address = state.start_address + (row_index * options.row_length) + byte_index;
         state.selected_address = Some(clicked_address);
+        state.text.value_text = format!("{:06X} =", clicked_address);
+        state.text.value_len = state.text.value_text.len() as f32 * state.dimensions.char_width;
+
         (true, None)
     }
 
@@ -441,6 +463,69 @@ where
             style.text_color,
             panel_input_bounds,
         );
+
+        if let Some(selected_addr) = state.selected_address {
+            if self.content.0.borrow().context.can_write(selected_addr) {
+                let value_bounds = Rectangle {
+                    x: state.bounds.byte_input.x
+                        - state.text.value_len
+                        - state.dimensions.char_width,
+                    y: panel_bounds.y,
+                    width: state.text.value_len,
+                    height: panel_bounds.height,
+                };
+
+                renderer.fill_text(
+                    Text {
+                        content: state.text.value_text.clone(),
+                        bounds: Size::new(state.text.value_len, panel_bounds.height),
+                        ..state.text_defaults
+                    },
+                    Point::new(
+                        value_bounds.x,
+                        panel_bounds.y + state.dimensions.char_width / 2.0,
+                    ),
+                    style.text_color,
+                    value_bounds,
+                );
+
+                let byte_input_bounds = state.bounds.byte_input;
+
+                renderer.fill_quad(
+                    Quad {
+                        bounds: byte_input_bounds,
+                        border: Border {
+                            width: 1.0,
+                            color: if state.byte_input.focused {
+                                style.text_color
+                            } else {
+                                style.border.color
+                            },
+                            ..style.border
+                        },
+                        shadow: Shadow::default(),
+                    },
+                    style.primary_color,
+                );
+
+                renderer.fill_text(
+                    Text {
+                        content: state.byte_input.value.clone(),
+                        bounds: Size::new(
+                            byte_input_bounds.width - state.dimensions.char_width,
+                            byte_input_bounds.height,
+                        ),
+                        ..state.text_defaults
+                    },
+                    Point::new(
+                        byte_input_bounds.x + state.dimensions.char_width / 2.0,
+                        panel_bounds.y + state.dimensions.char_width / 2.0,
+                    ),
+                    style.text_color,
+                    byte_input_bounds,
+                );
+            }
+        }
 
         if let Some(selected_addr) = state.selected_address {
             if selected_addr >= state.start_address
@@ -935,13 +1020,55 @@ where
                     keyboard::Key::Named(keyboard::key::Named::Enter) => {
                         if let Ok(addr) = usize::from_str_radix(&state.addr_input.value, 16) {
                             state.start_address = addr;
+                            publish(self.data_update_message(state, options.row_length));
+                            state.addr_input.value.clear();
                         }
                         state.addr_input.focused = false;
-                        publish(self.data_update_message(state, options.row_length));
                         shell.request_redraw();
                     }
                     keyboard::Key::Named(keyboard::key::Named::Escape) => {
                         state.addr_input.focused = false;
+                        shell.request_redraw();
+                    }
+                    _ => {}
+                }
+            }
+            Event::Keyboard(keyboard::Event::KeyPressed { key, .. })
+                if state.byte_input.focused =>
+            {
+                match key {
+                    keyboard::Key::Character(c) => {
+                        if state.byte_input.value.len() < 2
+                            && c.as_str()
+                                .chars()
+                                .next()
+                                .is_some_and(|ch| ch.is_ascii_hexdigit())
+                        {
+                            if let Some(ch) = c.as_str().chars().next() {
+                                state.byte_input.value.push(ch);
+                                shell.request_redraw();
+                            }
+                        }
+                    }
+                    keyboard::Key::Named(keyboard::key::Named::Backspace) => {
+                        state.byte_input.value.pop();
+                        shell.request_redraw();
+                    }
+                    keyboard::Key::Named(keyboard::key::Named::Enter) => {
+                        if let Some(selected_addr) = state.selected_address {
+                            if let Ok(byte) = u8::from_str_radix(&state.byte_input.value, 16) {
+                                publish(
+                                    self.action_performed(Action::UpdateByte(selected_addr, byte)),
+                                );
+                                publish(self.data_update_message(state, options.row_length));
+                                state.byte_input.value.clear();
+                            }
+                        }
+                        state.byte_input.focused = false;
+                        shell.request_redraw();
+                    }
+                    keyboard::Key::Named(keyboard::key::Named::Escape) => {
+                        state.byte_input.focused = false;
                         shell.request_redraw();
                     }
                     _ => {}

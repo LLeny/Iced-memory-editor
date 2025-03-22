@@ -23,6 +23,7 @@ pub(crate) struct DimensionsState {
 pub(crate) struct BoundsState {
     pub(crate) options: Rectangle,
     pub(crate) addr_input: Rectangle,
+    pub(crate) byte_input: Rectangle,
     pub(crate) show_ascii_checkbox: Rectangle,
     pub(crate) prev_format: Rectangle,
     pub(crate) next_format: Rectangle,
@@ -40,6 +41,8 @@ pub(crate) struct InputState {
 pub(crate) struct TextState {
     pub(crate) jumpto_text: String,
     pub(crate) jumpto_len: f32,
+    pub(crate) value_text: String,
+    pub(crate) value_len: f32,
 }
 
 pub(crate) struct State {
@@ -50,6 +53,7 @@ pub(crate) struct State {
     pub(crate) selected_address: Option<usize>,
     pub(crate) dimensions: DimensionsState,
     pub(crate) addr_input: InputState,
+    pub(crate) byte_input: InputState,
     pub(crate) bounds: BoundsState,
     pub(crate) text: TextState,
 }
@@ -77,6 +81,10 @@ impl Default for State {
                 value: String::new(),
                 focused: false,
             },
+            byte_input: InputState {
+                value: String::new(),
+                focused: false,
+            },
             focused: false,
             text_defaults: Text {
                 content: String::new(),
@@ -93,6 +101,7 @@ impl Default for State {
             bounds: BoundsState {
                 options: Rectangle::default(),
                 addr_input: Rectangle::default(),
+                byte_input: Rectangle::default(),
                 show_ascii_checkbox: Rectangle::default(),
                 prev_format: Rectangle::default(),
                 next_format: Rectangle::default(),
@@ -104,6 +113,8 @@ impl Default for State {
             text: TextState {
                 jumpto_text: "Jump to".to_string(),
                 jumpto_len: 0.0,
+                value_text: String::new(),
+                value_len: 0.0,
             },
         }
     }
@@ -129,6 +140,7 @@ impl State {
         self.dimensions.ascii_separator_x =
             self.dimensions.section_ascii_start - self.dimensions.section_separator_spacing / 2.0;
         self.text.jumpto_len = self.text.jumpto_text.len() as f32 * self.dimensions.char_width;
+        self.text.value_len = self.text.value_text.len() as f32 * self.dimensions.char_width;
     }
 
     pub(crate) fn update_bounds(&mut self, limits: &iced::advanced::layout::Limits) {
@@ -142,17 +154,35 @@ impl State {
         };
 
         let total_width = limits.max().width;
-        let jumpto_x = (total_width - self.text.jumpto_len - options_width) / 2.0;
+        let available_width = total_width - options_width;
+        let input_width = (self.dimensions.char_width + 1.0) * self.dimensions.address_char_len as f32 * 1.1;
+        let byte_input_width = (self.dimensions.char_width + 1.0) * 4.0 * 1.1;
+        let spacing = (available_width - input_width - byte_input_width) / 3.0;
+
+        let jumpto_x = spacing;
         let input_x = jumpto_x + self.text.jumpto_len + self.dimensions.char_width;
 
         self.bounds.addr_input = Rectangle {
             x: input_x,
             y: limits.max().height - self.dimensions.char_height * 1.3,
-            width: (self.dimensions.char_width + 1.0)
-                * self.dimensions.address_char_len as f32
-                * 1.1,
+            width: input_width,
             height: self.dimensions.char_height * 1.1,
         };
+
+        let value_x = input_x + input_width + spacing;
+        self.bounds.byte_input = Rectangle {
+            x: value_x,
+            y: limits.max().height - self.dimensions.char_height * 1.3,
+            width: byte_input_width,
+            height: self.dimensions.char_height * 1.1,
+        };
+
+        if let Some(addr) = self.selected_address {
+            self.text.value_text = format!("{:06X} =", addr);
+        } else {
+            self.text.value_text = String::new();
+        }
+        self.text.value_len = self.text.value_text.len() as f32 * self.dimensions.char_width;
 
         let panel_bounds = Rectangle {
             x: self.dimensions.char_width * 0.5,

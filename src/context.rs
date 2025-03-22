@@ -6,6 +6,8 @@ pub trait MemoryEditorContext: Default + Sized {
     fn data(&self) -> Vec<u8>;
     fn options(&self) -> MemoryEditorOptions;
     fn is_empty(&self) -> bool;
+    fn can_write(&self, address: usize) -> bool;
+    fn write(&mut self, address: usize, value: u8);
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -14,4 +16,5 @@ pub enum Action {
     ShowASCIIUpdate(bool),
     PreviewFormatUpdate(PreviewDataFormat),
     RowLengthUpdate(usize),
+    UpdateByte(usize, u8),
 }

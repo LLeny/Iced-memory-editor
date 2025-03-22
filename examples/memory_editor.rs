@@ -44,6 +44,9 @@ impl context::MemoryEditorContext for ExampleData {
                 self.options.preview_data_format = preview_data_format
             }
             context::Action::RowLengthUpdate(len) => self.options.row_length = len,
+            context::Action::UpdateByte(addr, byte) => {
+                self.write(addr, byte);
+            }
         }
     }
 
@@ -57,6 +60,16 @@ impl context::MemoryEditorContext for ExampleData {
 
     fn options(&self) -> MemoryEditorOptions {
         self.options.clone()
+    }
+
+    fn can_write(&self, address: usize) -> bool {
+        address < 0x100usize
+    }
+
+    fn write(&mut self, address: usize, value: u8) {
+        if let Some(byte) = self.data.get_mut(address) {
+            *byte = value;
+        }
     }
 }
 
