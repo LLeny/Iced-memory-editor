@@ -109,6 +109,116 @@ impl Default for State {
     }
 }
 
+impl State {
+    pub(crate) fn update_dimensions(&mut self, row_length: f32) {
+        self.dimensions.byte_width = self.dimensions.char_width * 2.5;
+        self.dimensions.group_spacing = self.dimensions.char_width;
+        self.dimensions.section_separator_spacing = self.dimensions.char_width * 2.0;
+
+        self.dimensions.section_data_start = self.dimensions.char_width
+            * self.dimensions.address_char_len as f32
+            + self.dimensions.section_separator_spacing;
+        self.dimensions.section_ascii_start = self.dimensions.section_data_start
+            + self.dimensions.byte_width * row_length
+            + (row_length / self.dimensions.group_char_len as f32 - 1.0)
+                * self.dimensions.group_spacing
+            + self.dimensions.section_separator_spacing;
+
+        self.dimensions.address_separator_x =
+            self.dimensions.section_data_start - self.dimensions.section_separator_spacing / 2.0;
+        self.dimensions.ascii_separator_x =
+            self.dimensions.section_ascii_start - self.dimensions.section_separator_spacing / 2.0;
+        self.text.jumpto_len = self.text.jumpto_text.len() as f32 * self.dimensions.char_width;
+    }
+
+    pub(crate) fn update_bounds(&mut self, limits: &iced::advanced::layout::Limits) {
+        let options_text = "Options";
+        let options_width = options_text.len() as f32 * self.dimensions.char_width;
+        self.bounds.options = Rectangle {
+            x: limits.min().width,
+            y: limits.max().height - self.dimensions.char_height * 1.5,
+            width: options_width,
+            height: self.dimensions.char_height * 1.5,
+        };
+
+        let total_width = limits.max().width;
+        let jumpto_x = (total_width - self.text.jumpto_len - options_width) / 2.0;
+        let input_x = jumpto_x + self.text.jumpto_len + self.dimensions.char_width;
+
+        self.bounds.addr_input = Rectangle {
+            x: input_x,
+            y: limits.max().height - self.dimensions.char_height * 1.3,
+            width: (self.dimensions.char_width + 1.0)
+                * self.dimensions.address_char_len as f32
+                * 1.1,
+            height: self.dimensions.char_height * 1.1,
+        };
+
+        let panel_bounds = Rectangle {
+            x: self.dimensions.char_width * 0.5,
+            y: limits.max().height
+                - self.dimensions.char_height * 1.5
+                - self.dimensions.char_height * 4.0,
+            width: limits.max().width - self.dimensions.char_width,
+            height: self.dimensions.char_height * 4.0,
+        };
+
+        let label_width = 120.0;
+        let offset_y = panel_bounds.y + self.dimensions.char_height * 0.5;
+        let checkbox_size = self.dimensions.char_height * 0.8;
+        let base_x = panel_bounds.x + self.dimensions.char_width + label_width;
+
+        self.bounds.show_ascii_checkbox = Rectangle {
+            x: base_x + 3.0 * self.dimensions.char_width,
+            y: offset_y + self.dimensions.char_height * 2.0,
+            width: checkbox_size,
+            height: checkbox_size,
+        };
+
+        self.bounds.text_format = Rectangle {
+            x: base_x + 2.0 * self.dimensions.char_width,
+            y: offset_y + self.dimensions.char_height,
+            width: self.dimensions.char_width * 3.0,
+            height: self.dimensions.char_height,
+        };
+
+        self.bounds.prev_format = Rectangle {
+            x: base_x,
+            y: offset_y + self.dimensions.char_height,
+            width: self.dimensions.char_width,
+            height: self.dimensions.char_height,
+        };
+
+        self.bounds.next_format = Rectangle {
+            x: base_x + 6.0 * self.dimensions.char_width,
+            y: offset_y + self.dimensions.char_height,
+            width: self.dimensions.char_width,
+            height: self.dimensions.char_height,
+        };
+
+        self.bounds.prev_row_length = Rectangle {
+            x: base_x,
+            y: offset_y,
+            width: self.dimensions.char_width,
+            height: self.dimensions.char_height,
+        };
+
+        self.bounds.next_row_length = Rectangle {
+            x: base_x + 6.0 * self.dimensions.char_width,
+            y: offset_y,
+            width: self.dimensions.char_width,
+            height: self.dimensions.char_height,
+        };
+
+        self.bounds.text_row_length = Rectangle {
+            x: base_x + 2.0 * self.dimensions.char_width,
+            y: offset_y,
+            width: self.dimensions.char_width * 3.0,
+            height: self.dimensions.char_height,
+        };
+    }
+}
+
 impl Focusable for State {
     fn is_focused(&self) -> bool {
         self.focused

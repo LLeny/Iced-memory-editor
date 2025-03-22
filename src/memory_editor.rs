@@ -754,109 +754,8 @@ where
         .min_bounds()
         .width;
 
-        state.dimensions.byte_width = state.dimensions.char_width * 2.5;
-        state.dimensions.group_spacing = state.dimensions.char_width;
-        state.dimensions.section_separator_spacing = state.dimensions.char_width * 2.0;
-
-        state.dimensions.section_data_start = state.dimensions.char_width
-            * state.dimensions.address_char_len as f32
-            + state.dimensions.section_separator_spacing;
-        state.dimensions.section_ascii_start = state.dimensions.section_data_start
-            + state.dimensions.byte_width * options.row_length as f32
-            + (options.row_length as f32 / state.dimensions.group_char_len as f32 - 1.0)
-                * state.dimensions.group_spacing
-            + state.dimensions.section_separator_spacing;
-
-        state.dimensions.address_separator_x =
-            state.dimensions.section_data_start - state.dimensions.section_separator_spacing / 2.0;
-        state.dimensions.ascii_separator_x =
-            state.dimensions.section_ascii_start - state.dimensions.section_separator_spacing / 2.0;
-        state.text.jumpto_len = state.text.jumpto_text.len() as f32 * state.dimensions.char_width;
-
-        let options_text = "Options";
-        let options_width = options_text.len() as f32 * state.dimensions.char_width;
-        state.bounds.options = Rectangle {
-            x: limits.min().width,
-            y: limits.max().height - state.dimensions.char_height * 1.5,
-            width: options_width,
-            height: state.dimensions.char_height * 1.5,
-        };
-
-        let total_width = limits.max().width;
-        let jumpto_x = (total_width - state.text.jumpto_len - options_width) / 2.0;
-        let input_x = jumpto_x + state.text.jumpto_len + state.dimensions.char_width;
-
-        state.bounds.addr_input = Rectangle {
-            x: input_x,
-            y: limits.max().height - state.dimensions.char_height * 1.3,
-            width: (state.dimensions.char_width + 1.0)
-                * state.dimensions.address_char_len as f32
-                * 1.1,
-            height: state.dimensions.char_height * 1.1,
-        };
-
-        let panel_bounds = Rectangle {
-            x: state.dimensions.char_width * 0.5,
-            y: limits.max().height
-                - state.dimensions.char_height * 1.5
-                - state.dimensions.char_height * 4.0,
-            width: limits.max().width - state.dimensions.char_width,
-            height: state.dimensions.char_height * 4.0,
-        };
-
-        let label_width = 120.0;
-        let offset_y = panel_bounds.y + state.dimensions.char_height * 0.5;
-        let checkbox_size = state.dimensions.char_height * 0.8;
-        let base_x = panel_bounds.x + state.dimensions.char_width + label_width;
-
-        state.bounds.show_ascii_checkbox = Rectangle {
-            x: base_x + 3.0 * state.dimensions.char_width,
-            y: offset_y + state.dimensions.char_height * 2.0,
-            width: checkbox_size,
-            height: checkbox_size,
-        };
-
-        state.bounds.text_format = Rectangle {
-            x: base_x + 2.0 * state.dimensions.char_width,
-            y: offset_y + state.dimensions.char_height,
-            width: state.dimensions.char_width * 3.0,
-            height: state.dimensions.char_height,
-        };
-
-        state.bounds.prev_format = Rectangle {
-            x: base_x,
-            y: offset_y + state.dimensions.char_height,
-            width: state.dimensions.char_width,
-            height: state.dimensions.char_height,
-        };
-
-        state.bounds.next_format = Rectangle {
-            x: base_x + 6.0 * state.dimensions.char_width,
-            y: offset_y + state.dimensions.char_height,
-            width: state.dimensions.char_width,
-            height: state.dimensions.char_height,
-        };
-
-        state.bounds.prev_row_length = Rectangle {
-            x: base_x,
-            y: offset_y,
-            width: state.dimensions.char_width,
-            height: state.dimensions.char_height,
-        };
-
-        state.bounds.next_row_length = Rectangle {
-            x: base_x + 6.0 * state.dimensions.char_width,
-            y: offset_y,
-            width: state.dimensions.char_width,
-            height: state.dimensions.char_height,
-        };
-
-        state.bounds.text_row_length = Rectangle {
-            x: base_x + 2.0 * state.dimensions.char_width,
-            y: offset_y,
-            width: state.dimensions.char_width * 3.0,
-            height: state.dimensions.char_height,
-        };
+        state.update_dimensions(options.row_length as f32);
+        state.update_bounds(limits);
 
         layout::Node::with_children(limits.max(), vec![])
     }
@@ -1052,11 +951,11 @@ where
                 delta: mouse::ScrollDelta::Lines { y, .. },
             }) => {
                 let step = y.trunc() * options.row_length as f32;
-                if step.is_sign_negative() {
-                    state.start_address = state.start_address.saturating_sub(step.abs() as usize);
+                state.start_address = if step.is_sign_negative() {
+                    state.start_address.saturating_sub(step.abs() as usize)
                 } else {
-                    state.start_address += step as usize;
-                }
+                    state.start_address + step as usize
+                };
                 publish(self.data_update_message(state, options.row_length));
             }
             _ => (),
