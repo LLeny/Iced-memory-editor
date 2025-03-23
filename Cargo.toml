@@ -11,10 +11,30 @@ license = "GPLv3"
 keywords = ["iced", "memory", "editor", "rust"]
 categories = ["gui"]
 
+[features]
+default = ["iced"]
+iced = ["dep:iced_core", "dep:iced_renderer"]
+libcosmic = ["dep:libcosmic"]
+
 [dependencies]
-iced_core = { git = "https://github.com/iced-rs/iced.git", rev = "363b0e9", features = ["advanced"] }
-iced_renderer = { git = "https://github.com/iced-rs/iced.git", rev = "363b0e9" }
 bytemuck = "1.22.0"
+
+[dependencies.iced_core]
+git = "https://github.com/iced-rs/iced.git"
+rev = "363b0e9"
+features = ["advanced"]
+optional = true
+
+[dependencies.iced_renderer]
+git = "https://github.com/iced-rs/iced.git"
+rev = "363b0e9"
+optional = true
+
+[dependencies.libcosmic]
+git = "https://github.com/pop-os/libcosmic.git"
+default-features = false
+rev = "cb682be3c887bcbf591309d350bac4d4710e104b"
+optional = true
 
 [dev-dependencies]
 iced = { git = "https://github.com/iced-rs/iced.git", rev = "363b0e9", features = ["advanced"] }
