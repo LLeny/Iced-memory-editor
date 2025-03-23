@@ -1,4 +1,4 @@
-use iced::{Border, Color, Shadow, Theme};
+use iced_core::{Border, Color, Shadow, Theme};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Style {

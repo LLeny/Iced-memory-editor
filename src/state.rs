@@ -1,5 +1,5 @@
-use iced::{
-    advanced::{widget::operation::Focusable, Text},
+use iced_core::{
+    {widget::operation::Focusable, Text},
     alignment::Vertical,
     widget::text::{Alignment, LineHeight, Shaping, Wrapping},
     Pixels, Rectangle, Size,
@@ -91,7 +91,7 @@ impl Default for State {
                 bounds: Size::ZERO,
                 size: Pixels::from(16.0),
                 line_height: LineHeight::default(),
-                font: iced::Font::MONOSPACE,
+                font: iced_core::Font::MONOSPACE,
                 align_x: Alignment::Left,
                 align_y: Vertical::Top,
                 shaping: Shaping::Advanced,
@@ -143,7 +143,7 @@ impl State {
         self.text.value_len = self.text.value_text.len() as f32 * self.dimensions.char_width;
     }
 
-    pub(crate) fn update_bounds(&mut self, limits: &iced::advanced::layout::Limits) {
+    pub(crate) fn update_bounds(&mut self, limits: &iced_core::layout::Limits) {
         let options_text = "Options";
         let options_width = options_text.len() as f32 * self.dimensions.char_width;
         self.bounds.options = Rectangle {

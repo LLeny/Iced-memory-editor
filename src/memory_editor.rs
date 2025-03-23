@@ -2,16 +2,16 @@ use crate::context::{self, Action};
 use crate::options::{MemoryEditorOptions, PreviewDataFormat};
 use crate::state::State;
 use crate::style::{Catalog, Style};
-use iced::advanced::graphics::text::Paragraph;
-use iced::advanced::layout::{self, Layout};
-use iced::advanced::mouse::Cursor;
-use iced::advanced::renderer::{self, Quad};
-use iced::advanced::text::Paragraph as _;
-use iced::advanced::widget::{self, tree::Tree, Widget};
-use iced::advanced::{mouse, Text};
-use iced::alignment::Vertical;
-use iced::widget::text::{Alignment, LineHeight, Shaping, Wrapping};
-use iced::{keyboard, Border, Element, Event, Length, Point, Rectangle, Shadow, Size};
+use iced_core::layout::{self, Layout};
+use iced_core::mouse::Cursor;
+use iced_core::renderer::{self, Quad};
+use iced_core::text::Paragraph as _;
+use iced_core::widget::{self, tree::Tree, Widget};
+use iced_core::{mouse, Text};
+use iced_core::alignment::Vertical;
+use iced_core::widget::text::{Alignment, LineHeight, Shaping, Wrapping};
+use iced_core::{keyboard, Border, Element, Event, Length, Point, Rectangle, Shadow, Size};
+use iced_renderer::graphics::text::Paragraph;
 use std::cell::RefCell;
 use std::f32;
 use std::ops::Range;
@@ -55,7 +55,7 @@ where
 
 pub struct MemoryEditor<'a, T, M>
 where
-    T: Catalog + iced::widget::text::Catalog,
+    T: Catalog + iced_core::widget::text::Catalog,
     M: context::MemoryEditorContext,
 {
     content: &'a Content<M>,
@@ -64,7 +64,7 @@ where
 
 impl<'a, T, M> MemoryEditor<'a, T, M>
 where
-    T: Catalog + iced::widget::text::Catalog + 'a,
+    T: Catalog + iced_core::widget::text::Catalog + 'a,
     M: context::MemoryEditorContext,
 {
     pub fn new(content: &'a Content<M>) -> Self {
@@ -248,7 +248,7 @@ where
         row_data: &[u8],
         options: &MemoryEditorOptions,
     ) where
-        R: renderer::Renderer + iced::advanced::text::Renderer<Font = iced::Font>,
+        R: renderer::Renderer + iced_core::text::Renderer<Font = iced_core::Font>,
     {
         renderer.fill_text(
             Text {
@@ -366,7 +366,7 @@ where
         bounds: Rectangle,
         options: &MemoryEditorOptions,
     ) where
-        R: renderer::Renderer + iced::advanced::text::Renderer<Font = iced::Font>,
+        R: renderer::Renderer + iced_core::text::Renderer<Font = iced_core::Font>,
     {
         let panel_bounds = Rectangle {
             y: bounds.y + bounds.height - state.dimensions.char_height * 1.5,
@@ -602,7 +602,7 @@ where
         layout: Layout<'_>,
         options: &MemoryEditorOptions,
     ) where
-        R: renderer::Renderer + iced::advanced::text::Renderer<Font = iced::Font>,
+        R: renderer::Renderer + iced_core::text::Renderer<Font = iced_core::Font>,
     {
         let state = tree.state.downcast_ref::<State>();
 
@@ -795,8 +795,8 @@ where
 
 impl<'a, T, R, M> Widget<Message, T, R> for MemoryEditor<'a, T, M>
 where
-    R: renderer::Renderer + iced::advanced::text::Renderer<Font = iced::Font> + 'a,
-    T: Catalog + iced::widget::text::Catalog + 'a,
+    R: renderer::Renderer + iced_core::text::Renderer<Font = iced_core::Font> + 'a,
+    T: Catalog + iced_core::widget::text::Catalog + 'a,
     M: context::MemoryEditorContext,
 {
     fn size(&self) -> Size<Length> {
@@ -830,7 +830,7 @@ where
             bounds: Size::INFINITY,
             size: renderer.default_size(),
             line_height: LineHeight::default(),
-            font: iced::Font::MONOSPACE,
+            font: iced_core::Font::MONOSPACE,
             align_x: Alignment::Left,
             align_y: Vertical::Top,
             shaping: Shaping::Advanced,
@@ -854,7 +854,7 @@ where
         theme: &T,
         _defaults: &renderer::Style,
         layout: Layout<'_>,
-        _cursor: iced::advanced::mouse::Cursor,
+        _cursor: iced_core::mouse::Cursor,
         _viewport: &Rectangle,
     ) where
         T: Catalog,
@@ -926,7 +926,7 @@ where
     }
 
     fn tag(&self) -> widget::tree::Tag {
-        iced::advanced::widget::tree::Tag::of::<State>()
+        iced_core::widget::tree::Tag::of::<State>()
     }
 
     fn state(&self) -> widget::tree::State {
@@ -953,8 +953,8 @@ where
         layout: Layout<'_>,
         cursor: mouse::Cursor,
         _renderer: &R,
-        _clipboard: &mut dyn iced::advanced::Clipboard,
-        shell: &mut iced::advanced::Shell<'_, Message>,
+        _clipboard: &mut dyn iced_core::Clipboard,
+        shell: &mut iced_core::Shell<'_, Message>,
         _viewport: &Rectangle,
     ) {
         let state = tree.state.downcast_mut::<State>();
@@ -1093,18 +1093,18 @@ where
         &self,
         _state: &widget::Tree,
         _layout: Layout<'_>,
-        _cursor: iced::advanced::mouse::Cursor,
+        _cursor: iced_core::mouse::Cursor,
         _viewport: &Rectangle,
         _renderer: &R,
-    ) -> iced::advanced::mouse::Interaction {
+    ) -> iced_core::mouse::Interaction {
         mouse::Interaction::default()
     }
 }
 
 impl<'a, T, R, M> From<MemoryEditor<'a, T, M>> for Element<'a, Message, T, R>
 where
-    R: renderer::Renderer + iced::advanced::text::Renderer<Font = iced::Font> + 'a,
-    T: Catalog + iced::widget::text::Catalog + 'a,
+    R: renderer::Renderer + iced_core::text::Renderer<Font = iced_core::Font> + 'a,
+    T: Catalog + iced_core::widget::text::Catalog + 'a,
     M: context::MemoryEditorContext,
 {
     fn from(memory_editor: MemoryEditor<'a, T, M>) -> Self {
@@ -1114,7 +1114,7 @@ where
 
 pub fn memory_editor<'a, T, M>(content: &'a Content<M>) -> MemoryEditor<'a, T, M>
 where
-    T: Catalog + iced::widget::text::Catalog + 'a,
+    T: Catalog + iced_core::widget::text::Catalog + 'a,
     M: context::MemoryEditorContext,
 {
     MemoryEditor::new(content)
