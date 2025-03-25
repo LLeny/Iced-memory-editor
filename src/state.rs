@@ -1,8 +1,19 @@
+#[cfg(feature = "libcosmic")]
+use cosmic::{
+    iced::Limits,
+    iced_core::{
+        widget::text::{LineHeight, Shaping, Wrapping},
+        Font, Pixels, Rectangle, Size,
+        {widget::operation::Focusable, Text},
+    },
+};
+#[cfg(feature = "iced")]
 use iced_core::{
-    {widget::operation::Focusable, Text},
     alignment::Vertical,
+    layout::Limits,
     widget::text::{Alignment, LineHeight, Shaping, Wrapping},
-    Pixels, Rectangle, Size,
+    Font, Pixels, Rectangle, Size,
+    {widget::operation::Focusable, Text},
 };
 
 pub(crate) struct DimensionsState {
@@ -51,6 +62,7 @@ pub(crate) struct State {
     pub(crate) options_open: bool,
     pub(crate) start_address: usize,
     pub(crate) selected_address: Option<usize>,
+    pub(crate) data: Vec<u8>,
     pub(crate) dimensions: DimensionsState,
     pub(crate) addr_input: InputState,
     pub(crate) byte_input: InputState,
@@ -77,6 +89,7 @@ impl Default for State {
             },
             start_address: 0,
             selected_address: None,
+            data: Vec::new(),
             addr_input: InputState {
                 value: String::new(),
                 focused: false,
@@ -91,10 +104,16 @@ impl Default for State {
                 bounds: Size::ZERO,
                 size: Pixels::from(16.0),
                 line_height: LineHeight::default(),
-                font: iced_core::Font::MONOSPACE,
+                font: Font::MONOSPACE,
+                #[cfg(feature = "iced")]
                 align_x: Alignment::Left,
+                #[cfg(feature = "libcosmic")]
+                horizontal_alignment: cosmic::iced_core::alignment::Horizontal::Left,
+                #[cfg(feature = "iced")]
                 align_y: Vertical::Top,
-                shaping: Shaping::Advanced,
+                #[cfg(feature = "libcosmic")]
+                vertical_alignment: cosmic::iced_core::alignment::Vertical::Top,
+                shaping: Shaping::Basic,
                 wrapping: Wrapping::None,
             },
             options_open: false,
@@ -143,7 +162,7 @@ impl State {
         self.text.value_len = self.text.value_text.len() as f32 * self.dimensions.char_width;
     }
 
-    pub(crate) fn update_bounds(&mut self, limits: &iced_core::layout::Limits) {
+    pub(crate) fn update_bounds(&mut self, limits: &Limits) {
         let options_text = "Options";
         let options_width = options_text.len() as f32 * self.dimensions.char_width;
         self.bounds.options = Rectangle {
@@ -155,7 +174,8 @@ impl State {
 
         let total_width = limits.max().width;
         let available_width = total_width - options_width;
-        let input_width = (self.dimensions.char_width + 1.0) * self.dimensions.address_char_len as f32 * 1.1;
+        let input_width =
+            (self.dimensions.char_width + 1.0) * self.dimensions.address_char_len as f32 * 1.1;
         let byte_input_width = (self.dimensions.char_width + 1.0) * 4.0 * 1.1;
         let spacing = (available_width - input_width - byte_input_width) / 3.0;
 

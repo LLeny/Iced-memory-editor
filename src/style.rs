@@ -1,4 +1,7 @@
+#[cfg(feature = "iced")]
 use iced_core::{Border, Color, Shadow, Theme};
+#[cfg(feature = "libcosmic")]
+use cosmic::iced_core::{Border, Color, Shadow, Theme};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Style {
@@ -41,9 +44,25 @@ pub fn default(theme: &Theme) -> Style {
         primary_color: ext.secondary.weak.text,
         text_color: pal.text,
         inactive_text_color: ext.secondary.weak.color,
-        border: Border::default(),
-        shadow: Shadow::default(),
         selection_color: ext.primary.base.color,
         selected_text_color: ext.primary.base.text,
+        border: Border::default(),
+        shadow: Shadow::default(),
+    }
+}
+#[cfg(feature = "libcosmic")]
+impl From<&cosmic::Theme> for Style {
+    fn from(theme: &cosmic::Theme) -> Self {
+        let cosmic = theme.cosmic();
+        Style {
+            background: cosmic.bg_color().into(),
+            primary_color: cosmic.primary_container_color().into(),
+            text_color: cosmic.button_color().into(),
+            inactive_text_color: cosmic.button_bg_color().into(),
+            selection_color: cosmic.accent_color().into(),
+            selected_text_color: cosmic.accent_text_color().into(),
+            border: Border::default(),
+            shadow: Shadow::default(),
+        }
     }
 }

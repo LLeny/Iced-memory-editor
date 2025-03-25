@@ -1,8 +1,6 @@
 use iced::{Element, Theme};
 use iced_memory_editor::{
-    context,
-    memory_editor::{memory_editor, Content, Message},
-    options::MemoryEditorOptions,
+    context::{Content, MemoryEditorContext}, memory_editor::memory_editor, options::MemoryEditorOptions
 };
 use rand::Rng;
 use std::ops::Range;
@@ -15,7 +13,6 @@ pub fn main() -> iced::Result {
 
 struct ExampleData {
     data: [u8; 65536],
-    range: Range<usize>,
     options: MemoryEditorOptions,
 }
 
@@ -29,33 +26,18 @@ impl Default for ExampleData {
 
         Self {
             data,
-            range: Range { start: 0, end: 0 },
             options: MemoryEditorOptions::default(),
         }
     }
 }
 
-impl context::MemoryEditorContext for ExampleData {
-    fn perform(&mut self, action: context::Action) {
-        match action {
-            context::Action::DataUpdate(range) => self.range = range,
-            context::Action::ShowASCIIUpdate(show) => self.options.show_ascii = show,
-            context::Action::PreviewFormatUpdate(preview_data_format) => {
-                self.options.preview_data_format = preview_data_format
-            }
-            context::Action::RowLengthUpdate(len) => self.options.row_length = len,
-            context::Action::UpdateByte(addr, byte) => {
-                self.write(addr, byte);
-            }
-        }
-    }
+#[derive(Debug, Clone, Copy)]
+enum Message {
+}
 
-    fn data(&self) -> Vec<u8> {
-        self.data[self.range.clone()].into()
-    }
-
-    fn is_empty(&self) -> bool {
-        self.range.len() == 0
+impl MemoryEditorContext for ExampleData {
+    fn data(&self, range: Range<usize>) -> Vec<u8> {
+        self.data[range].into()
     }
 
     fn options(&self) -> MemoryEditorOptions {
@@ -71,6 +53,10 @@ impl context::MemoryEditorContext for ExampleData {
             *byte = value;
         }
     }
+    
+    fn write_options(&mut self, options: MemoryEditorOptions) {
+        self.options = options;
+    }
 }
 
 struct Example {
@@ -84,10 +70,8 @@ impl Example {
         Example { content }
     }
 
-    fn update(&mut self, message: Message) {
-        if let Message::ActionPerformed(action) = message {
-            self.content.perform(action)
-        }
+    fn update(&mut self, _message: Message) {
+        
     }
 
     fn view(&self) -> Element<Message> {

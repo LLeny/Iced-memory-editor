@@ -12,7 +12,7 @@ keywords = ["iced", "memory", "editor", "rust"]
 categories = ["gui"]
 
 [features]
-default = ["iced"]
+default = []
 iced = ["dep:iced_core", "dep:iced_renderer"]
 libcosmic = ["dep:libcosmic"]
 
@@ -32,12 +32,25 @@ optional = true
 
 [dependencies.libcosmic]
 git = "https://github.com/pop-os/libcosmic.git"
-default-features = false
 rev = "cb682be3c887bcbf591309d350bac4d4710e104b"
+default-features = false
 optional = true
 
 [dev-dependencies]
-iced = { git = "https://github.com/iced-rs/iced.git", rev = "363b0e9", features = ["advanced"] }
+iced = { git = "https://github.com/iced-rs/iced.git", rev = "363b0e9", features = [
+	"advanced",
+] }
+libcosmic = { git = "https://github.com/pop-os/libcosmic.git", rev = "cb682be3c887bcbf591309d350bac4d4710e104b", default-features = false, features = [
+    "debug",
+    "winit",
+    "tokio",
+    "xdg-portal",
+    "dbus-config",
+    "a11y",
+    "wgpu",
+    "single-instance",
+    "multi-window",
+]}
 rand = "0.9"
 
 [lib]
@@ -45,5 +58,11 @@ name = "iced_memory_editor"
 path = "src/lib.rs"
 
 [[example]]
-name = "memory_editor"
-path = "examples/memory_editor.rs"
+name = "memory_editor_iced"
+path = "examples/memory_editor_iced.rs"
+required-features = ["iced"]
+
+[[example]]
+name = "memory_editor_cosmic"
+path = "examples/memory_editor_cosmic.rs"
+required-features = ["libcosmic"]
