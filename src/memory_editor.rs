@@ -279,8 +279,11 @@ where
     .min_bounds()
     .width;
 
+    if cfg!(feature = "libcosmic") {  // TODO: Explain/remove
+        state.dimensions.char_width *= 1.2;
+    }
+
     state.update_dimensions(options.row_length as f32);
-    state.update_bounds(limits);
 
     layout::Node::with_children(limits.max(), vec![])
 }
@@ -370,9 +373,11 @@ where
     let bounds = layout.bounds();
     let options = options(content);
 
+    state.update_bounds(&bounds);
+
     if state.data.is_empty() {
         update_data(content, state, options.row_length);
-        return iced_core::event::Status::Captured; 
+        return iced_core::event::Status::Captured;
     }
 
     match event {

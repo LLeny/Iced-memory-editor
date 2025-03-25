@@ -1,16 +1,12 @@
 #[cfg(feature = "libcosmic")]
-use cosmic::{
-    iced::Limits,
-    iced_core::{
+use cosmic::iced_core::{
         widget::text::{LineHeight, Shaping, Wrapping},
         Font, Pixels, Rectangle, Size,
         {widget::operation::Focusable, Text},
-    },
-};
+    };
 #[cfg(feature = "iced")]
 use iced_core::{
     alignment::Vertical,
-    layout::Limits,
     widget::text::{Alignment, LineHeight, Shaping, Wrapping},
     Font, Pixels, Rectangle, Size,
     {widget::operation::Focusable, Text},
@@ -162,17 +158,17 @@ impl State {
         self.text.value_len = self.text.value_text.len() as f32 * self.dimensions.char_width;
     }
 
-    pub(crate) fn update_bounds(&mut self, limits: &Limits) {
+    pub(crate) fn update_bounds(&mut self, bounds: &Rectangle) {
         let options_text = "Options";
         let options_width = options_text.len() as f32 * self.dimensions.char_width;
         self.bounds.options = Rectangle {
-            x: limits.min().width,
-            y: limits.max().height - self.dimensions.char_height * 1.5,
+            x: bounds.x,
+            y: bounds.y + bounds.height - self.dimensions.char_height * 1.5,
             width: options_width,
             height: self.dimensions.char_height * 1.5,
         };
 
-        let total_width = limits.max().width;
+        let total_width = bounds.width;
         let available_width = total_width - options_width;
         let input_width =
             (self.dimensions.char_width + 1.0) * self.dimensions.address_char_len as f32 * 1.1;
@@ -184,7 +180,7 @@ impl State {
 
         self.bounds.addr_input = Rectangle {
             x: input_x,
-            y: limits.max().height - self.dimensions.char_height * 1.3,
+            y: bounds.y + bounds.height - self.dimensions.char_height * 1.3,
             width: input_width,
             height: self.dimensions.char_height * 1.1,
         };
@@ -192,7 +188,7 @@ impl State {
         let value_x = input_x + input_width + spacing;
         self.bounds.byte_input = Rectangle {
             x: value_x,
-            y: limits.max().height - self.dimensions.char_height * 1.3,
+            y: bounds.y + bounds.height - self.dimensions.char_height * 1.3,
             width: byte_input_width,
             height: self.dimensions.char_height * 1.1,
         };
@@ -206,10 +202,10 @@ impl State {
 
         let panel_bounds = Rectangle {
             x: self.dimensions.char_width * 0.5,
-            y: limits.max().height
+            y: bounds.y + bounds.height
                 - self.dimensions.char_height * 1.5
                 - self.dimensions.char_height * 4.0,
-            width: limits.max().width - self.dimensions.char_width,
+            width: bounds.width - self.dimensions.char_width,
             height: self.dimensions.char_height * 4.0,
         };
 

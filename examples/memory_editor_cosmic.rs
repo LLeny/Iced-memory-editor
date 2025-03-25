@@ -1,12 +1,12 @@
-use std::ops::Range;
-use std::vec;
+use cosmic::iced::widget::column;
 use cosmic::iced::Length;
 use cosmic::{app::Settings, executor, Core, Element, Task};
-use cosmic::iced::widget::column;
 use iced_memory_editor::context::{Content, MemoryEditorContext};
 use iced_memory_editor::memory_editor::memory_editor;
 use iced_memory_editor::options::MemoryEditorOptions;
 use rand::Rng;
+use std::ops::Range;
+use std::vec;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     cosmic::app::run::<App>(Settings::default(), vec![])?;
@@ -14,8 +14,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[derive(Clone, Debug)]
-pub enum Message {
-}
+pub enum Message {}
 
 pub struct App {
     core: Core,
@@ -40,7 +39,7 @@ impl cosmic::Application for App {
     fn init(core: Core, _input: Self::Flags) -> (Self, Task<cosmic::Action<Self::Message>>) {
         let app = App {
             core,
-            content: Content::new(ExampleData::default())
+            content: Content::new(ExampleData::default()),
         };
 
         (app, Task::none())
@@ -52,22 +51,12 @@ impl cosmic::Application for App {
 
     fn view(&self) -> Element<Self::Message> {
         let memory_editor = memory_editor(&self.content);
-        let centered = cosmic::widget::container(
-            column![
-                memory_editor
-            ]
-        )
-        .center(Length::Fill);
-
+        let centered = cosmic::widget::container(column![memory_editor]).center(Length::Fill);
         Element::from(centered)
     }
 }
 
-impl App
-where
-    Self: cosmic::Application,
-{
-}
+impl App where Self: cosmic::Application {}
 
 struct ExampleData {
     data: [u8; 65536],
@@ -107,7 +96,7 @@ impl MemoryEditorContext for ExampleData {
             *byte = value;
         }
     }
-    
+
     fn write_options(&mut self, options: MemoryEditorOptions) {
         self.options = options;
     }

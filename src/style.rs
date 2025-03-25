@@ -60,7 +60,7 @@ impl From<&cosmic::Theme> for Style {
             text_color: cosmic.button_color().into(),
             inactive_text_color: cosmic.button_bg_color().into(),
             selection_color: cosmic.accent_color().into(),
-            selected_text_color: cosmic.accent_text_color().into(),
+            selected_text_color: cosmic.primary_container_color().into(),
             border: Border::default(),
             shadow: Shadow::default(),
         }
