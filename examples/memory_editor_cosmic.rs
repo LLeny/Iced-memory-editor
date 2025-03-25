@@ -52,7 +52,6 @@ impl cosmic::Application for App {
 
     fn view(&self) -> Element<Self::Message> {
         let memory_editor = memory_editor(&self.content);
-
         let centered = cosmic::widget::container(
             column![
                 memory_editor

@@ -43,6 +43,7 @@ where
 {
     content: &'a Content<Context>,
     class: <Theme as crate::style::Catalog>::Class<'a>,
+    style: Option<Style>,
 }
 
 #[cfg(feature = "iced")]
@@ -55,6 +56,7 @@ where
         MemoryEditor {
             class: <Theme as crate::style::Catalog>::default(),
             content,
+            style: None,
         }
     }
 }
@@ -65,6 +67,7 @@ where
     Context: context::MemoryEditorContext + 'a,
 {
     content: &'a Content<Context>,
+    style: Option<Style>,
 }
 
 #[cfg(feature = "libcosmic")]
@@ -73,7 +76,30 @@ where
     Context: context::MemoryEditorContext + 'a,
 {
     pub fn new(content: &'a Content<Context>) -> Self {
-        MemoryEditor { content }
+        MemoryEditor { content, style: None }
+    }
+}
+
+#[cfg(feature = "iced")]
+impl<'a, Context, Theme> MemoryEditor<'a, Context, Theme>
+where
+    Theme: Catalog + iced_core::widget::text::Catalog + 'a,
+    Context: context::MemoryEditorContext + 'a,
+{
+    pub fn with_style(mut self, style: Style) -> Self {
+        self.style = Some(style);
+        self
+    }
+}
+
+#[cfg(feature = "libcosmic")]
+impl<'a, Context> MemoryEditor<'a, Context>
+where
+    Context: context::MemoryEditorContext + 'a,
+{
+    pub fn with_style(mut self, style: Style) -> Self {
+        self.style = Some(style);
+        self
     }
 }
 
@@ -110,7 +136,7 @@ where
     ) where
         Theme: Catalog,
     {
-        let style = <Theme as crate::style::Catalog>::style(theme, &self.class);
+        let style = self.style.unwrap_or_else(|| <Theme as crate::style::Catalog>::style(theme, &self.class));
         draw(self.content, tree, renderer, &style, layout);
     }
 
@@ -125,7 +151,9 @@ where
         shell: &mut iced_core::Shell<'_, Message>,
         _viewport: &Rectangle,
     ) {
-        update(self.content, tree, event.clone(), layout, cursor, shell);
+        if iced_core::event::Status::Captured == update(self.content, tree, event.clone(), layout, cursor, shell) {
+            shell.request_redraw();
+        }
     }
 
     fn state(&self) -> widget::tree::State {
@@ -173,7 +201,7 @@ where
         _cursor: iced_core::mouse::Cursor,
         _viewport: &Rectangle,
     ) {
-        draw(self.content, tree, renderer, &theme.into(), layout);
+        draw(self.content, tree, renderer, &self.style.unwrap_or_else(|| theme.into()), layout);
     }
 
     fn on_event(
