@@ -370,6 +370,11 @@ where
     let bounds = layout.bounds();
     let options = options(content);
 
+    if state.data.is_empty() {
+        update_data(content, state, options.row_length);
+        return iced_core::event::Status::Captured; 
+    }
+
     match event {
         Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) => {
             if let (true, message) = handle_mouse_interaction(content, state, cursor, bounds, &options)
