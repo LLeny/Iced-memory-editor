@@ -32,7 +32,7 @@ optional = true
 
 [dependencies.libcosmic]
 git = "https://github.com/pop-os/libcosmic.git"
-rev = "cb682be3c887bcbf591309d350bac4d4710e104b"
+rev = "2753941aad9bd2a6e2909a09b2350df50765daa9"
 default-features = false
 optional = true
 
@@ -40,17 +40,17 @@ optional = true
 iced = { git = "https://github.com/iced-rs/iced.git", rev = "363b0e9", features = [
 	"advanced",
 ] }
-libcosmic = { git = "https://github.com/pop-os/libcosmic.git", rev = "cb682be3c887bcbf591309d350bac4d4710e104b", default-features = false, features = [
-    "debug",
-    "winit",
-    "tokio",
-    "xdg-portal",
-    "dbus-config",
-    "a11y",
-    "wgpu",
-    "single-instance",
-    "multi-window",
-]}
+libcosmic = { git = "https://github.com/pop-os/libcosmic.git", rev = "2753941aad9bd2a6e2909a09b2350df50765daa9", default-features = false, features = [
+	"debug",
+	"winit",
+	"tokio",
+	"xdg-portal",
+	"dbus-config",
+	"a11y",
+	"wgpu",
+	"single-instance",
+	"multi-window",
+] }
 rand = "0.9"
 
 [lib]
@@ -66,3 +66,4 @@ required-features = ["iced"]
 name = "memory_editor_cosmic"
 path = "examples/memory_editor_cosmic.rs"
 required-features = ["libcosmic"]
+
