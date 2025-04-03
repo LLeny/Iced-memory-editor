@@ -1,8 +1,8 @@
 [package]
+edition = "2021"
 name = "iced_memory_editor"
 version = "0.1.0"
 authors = ["LLeny"]
-edition = "2021"
 description = "A memory editor for the iced library"
 readme = "README.md"
 homepage = "https://github.com/LLeny/iced_memory_editor"
@@ -21,26 +21,26 @@ bytemuck = "1.22.0"
 
 [dependencies.iced_core]
 git = "https://github.com/iced-rs/iced.git"
-rev = "363b0e9"
+rev = "d203392c9d4f565e4f3ae91899cd390c4d947ead"
 features = ["advanced"]
 optional = true
 
 [dependencies.iced_renderer]
 git = "https://github.com/iced-rs/iced.git"
-rev = "363b0e9"
+rev = "d203392c9d4f565e4f3ae91899cd390c4d947ead"
 optional = true
 
 [dependencies.libcosmic]
 git = "https://github.com/pop-os/libcosmic.git"
-rev = "2753941aad9bd2a6e2909a09b2350df50765daa9"
+rev = "148656948179bb53362e77e6e8057255f2f9d8c9"
 default-features = false
 optional = true
 
 [dev-dependencies]
-iced = { git = "https://github.com/iced-rs/iced.git", rev = "363b0e9", features = [
+iced = { git = "https://github.com/iced-rs/iced.git", rev = "d203392c9d4f565e4f3ae91899cd390c4d947ead", features = [
 	"advanced",
 ] }
-libcosmic = { git = "https://github.com/pop-os/libcosmic.git", rev = "2753941aad9bd2a6e2909a09b2350df50765daa9", default-features = false, features = [
+libcosmic = { git = "https://github.com/pop-os/libcosmic.git", rev = "148656948179bb53362e77e6e8057255f2f9d8c9", default-features = false, features = [
 	"debug",
 	"winit",
 	"tokio",
@@ -52,6 +52,9 @@ libcosmic = { git = "https://github.com/pop-os/libcosmic.git", rev = "2753941aad
 	"multi-window",
 ] }
 rand = "0.9"
+
+[patch.'https://github.com/pop-os/cosmic-text']
+cosmic-text = { git = "https://github.com/pop-os/cosmic-text.git?rev=6598c7cae80c112b9889a2375d62b2c999ec7fc0" }
 
 [lib]
 name = "iced_memory_editor"
@@ -66,4 +69,3 @@ required-features = ["iced"]
 name = "memory_editor_cosmic"
 path = "examples/memory_editor_cosmic.rs"
 required-features = ["libcosmic"]
-
