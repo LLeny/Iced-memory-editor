@@ -1,9 +1,9 @@
 #[cfg(feature = "libcosmic")]
 use cosmic::iced_core::{
-        widget::text::{LineHeight, Shaping, Wrapping},
-        Font, Pixels, Rectangle, Size,
-        {widget::operation::Focusable, Text},
-    };
+    widget::text::{LineHeight, Shaping, Wrapping},
+    Font, Pixels, Rectangle, Size,
+    {widget::operation::Focusable, Text},
+};
 #[cfg(feature = "iced")]
 use iced_core::{
     alignment::Vertical,
@@ -175,7 +175,7 @@ impl State {
         let byte_input_width = (self.dimensions.char_width + 1.0) * 4.0 * 1.1;
         let spacing = (available_width - input_width - byte_input_width) / 3.0;
 
-        let jumpto_x = spacing;
+        let jumpto_x = bounds.x + spacing;
         let input_x = jumpto_x + self.text.jumpto_len + self.dimensions.char_width;
 
         self.bounds.addr_input = Rectangle {
@@ -185,7 +185,7 @@ impl State {
             height: self.dimensions.char_height * 1.1,
         };
 
-        let value_x = input_x + input_width + spacing;
+        let value_x = input_x + spacing;
         self.bounds.byte_input = Rectangle {
             x: value_x,
             y: bounds.y + bounds.height - self.dimensions.char_height * 1.3,
@@ -201,7 +201,7 @@ impl State {
         self.text.value_len = self.text.value_text.len() as f32 * self.dimensions.char_width;
 
         let panel_bounds = Rectangle {
-            x: self.dimensions.char_width * 0.5,
+            x: bounds.x + self.dimensions.char_width * 0.5,
             y: bounds.y + bounds.height
                 - self.dimensions.char_height * 1.5
                 - self.dimensions.char_height * 4.0,

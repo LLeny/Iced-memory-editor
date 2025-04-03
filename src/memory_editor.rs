@@ -76,7 +76,10 @@ where
     Context: context::MemoryEditorContext + 'a,
 {
     pub fn new(content: &'a Content<Context>) -> Self {
-        MemoryEditor { content, style: None }
+        MemoryEditor {
+            content,
+            style: None,
+        }
     }
 }
 
@@ -136,7 +139,9 @@ where
     ) where
         Theme: Catalog,
     {
-        let style = self.style.unwrap_or_else(|| <Theme as crate::style::Catalog>::style(theme, &self.class));
+        let style = self
+            .style
+            .unwrap_or_else(|| <Theme as crate::style::Catalog>::style(theme, &self.class));
         draw(self.content, tree, renderer, &style, layout);
     }
 
@@ -151,7 +156,9 @@ where
         shell: &mut iced_core::Shell<'_, Message>,
         _viewport: &Rectangle,
     ) {
-        if iced_core::event::Status::Captured == update(self.content, tree, event.clone(), layout, cursor, shell) {
+        if iced_core::event::Status::Captured
+            == update(self.content, tree, event.clone(), layout, cursor, shell)
+        {
             shell.request_redraw();
         }
     }
@@ -201,7 +208,13 @@ where
         _cursor: iced_core::mouse::Cursor,
         _viewport: &Rectangle,
     ) {
-        draw(self.content, tree, renderer, &self.style.unwrap_or_else(|| theme.into()), layout);
+        draw(
+            self.content,
+            tree,
+            renderer,
+            &self.style.unwrap_or_else(|| theme.into()),
+            layout,
+        );
     }
 
     fn on_event(
@@ -279,7 +292,8 @@ where
     .min_bounds()
     .width;
 
-    if cfg!(feature = "libcosmic") {  // TODO: Explain/remove
+    if cfg!(feature = "libcosmic") {
+        // TODO: Explain/remove
         state.dimensions.char_width *= 1.2;
     }
 
@@ -315,7 +329,7 @@ fn draw<'a, Renderer, Context>(
         renderer,
         &style,
         separator_bounds,
-        state.dimensions.address_separator_x,
+        separator_bounds.x + state.dimensions.address_separator_x,
     );
 
     if options.show_ascii {
@@ -323,7 +337,7 @@ fn draw<'a, Renderer, Context>(
             renderer,
             &style,
             separator_bounds,
-            state.dimensions.ascii_separator_x,
+            separator_bounds.x + state.dimensions.ascii_separator_x,
         );
     }
 
@@ -382,7 +396,8 @@ where
 
     match event {
         Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) => {
-            if let (true, message) = handle_mouse_interaction(content, state, cursor, bounds, &options)
+            if let (true, message) =
+                handle_mouse_interaction(content, state, cursor, bounds, &options)
             {
                 if let Some(message) = message {
                     match message {
@@ -391,24 +406,33 @@ where
                             shell.invalidate_layout();
                         }
                         Action::RowLengthUpdate(len) => {
-                            write_options(content, MemoryEditorOptions {
-                                row_length: len,
-                                ..options
-                            });
+                            write_options(
+                                content,
+                                MemoryEditorOptions {
+                                    row_length: len,
+                                    ..options
+                                },
+                            );
                             update_data(content, state, len);
                             shell.invalidate_layout();
                         }
                         Action::PreviewFormatUpdate(format) => {
-                            write_options(content,MemoryEditorOptions {
-                                preview_data_format: format,
-                                ..options
-                            });
+                            write_options(
+                                content,
+                                MemoryEditorOptions {
+                                    preview_data_format: format,
+                                    ..options
+                                },
+                            );
                         }
                         Action::ShowASCIIUpdate(show) => {
-                            write_options(content, MemoryEditorOptions {
-                                show_ascii: show,
-                                ..options
-                            });
+                            write_options(
+                                content,
+                                MemoryEditorOptions {
+                                    show_ascii: show,
+                                    ..options
+                                },
+                            );
                             shell.invalidate_layout();
                         }
                         _ => (),
@@ -474,7 +498,7 @@ where
                 keyboard::Key::Named(keyboard::key::Named::Enter) => {
                     if let Some(selected_addr) = state.selected_address {
                         if let Ok(byte) = u8::from_str_radix(&state.byte_input.value, 16) {
-                            write(content,selected_addr, byte);
+                            write(content, selected_addr, byte);
                             update_data(content, state, options.row_length);
                             state.byte_input.value.clear();
                         }
@@ -759,7 +783,7 @@ fn row<Renderer>(
     }
 
     if options.show_ascii {
-        x_offset = state.dimensions.section_ascii_start;
+        x_offset = bounds.x + state.dimensions.section_ascii_start;
 
         let ascii_string: String = row_data
             .iter()
@@ -787,7 +811,8 @@ fn row<Renderer>(
 
         if let Some(selected_addr) = state.selected_address {
             if selected_addr >= *addr && selected_addr < addr + options.row_length {
-                let ascii_x = state.dimensions.section_ascii_start
+                let ascii_x = bounds.x
+                    + state.dimensions.section_ascii_start
                     + ((selected_addr - addr) as f32 * state.dimensions.char_width);
 
                 renderer.fill_quad(
@@ -1169,9 +1194,7 @@ fn bottom_panel<Renderer, Context: MemoryEditorContext>(
                 byte_input_bounds,
             );
         }
-    }
 
-    if let Some(selected_addr) = state.selected_address {
         if selected_addr >= state.start_address
             && selected_addr < state.start_address + state.dimensions.row_count * options.row_length
         {
