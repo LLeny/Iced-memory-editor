@@ -1184,8 +1184,8 @@ dependencies = [
 
 [[package]]
 name = "cosmic-text"
-version = "0.14.0"
-source = "git+https://github.com/pop-os/cosmic-text.git?rev=6598c7cae80c112b9889a2375d62b2c999ec7fc0#6598c7cae80c112b9889a2375d62b2c999ec7fc0"
+version = "0.14.2"
+source = "git+https://github.com/pop-os/cosmic-text.git?rev=6598c7cae80c112b9889a2375d62b2c999ec7fc0#9e7a56f083db15f67510df4396351464df2e64bd"
 dependencies = [
  "bitflags 2.9.0",
  "fontdb 0.16.2",
@@ -2378,7 +2378,7 @@ name = "iced_glyphon"
 version = "0.6.0"
 source = "git+https://github.com/pop-os/glyphon.git?tag=iced-0.14-dev#6ef9d12a20cfd0f7bdf38136a26ded9f7459ec8b"
 dependencies = [
- "cosmic-text 0.14.0",
+ "cosmic-text 0.14.2",
  "etagere",
  "lru",
  "rustc-hash 2.1.1",
@@ -2392,7 +2392,7 @@ source = "git+https://github.com/pop-os/libcosmic.git?rev=148656948179bb53362e77
 dependencies = [
  "bitflags 2.9.0",
  "bytemuck",
- "cosmic-text 0.14.0",
+ "cosmic-text 0.14.2",
  "half",
  "iced_core 0.14.0-dev (git+https://github.com/pop-os/libcosmic.git?rev=148656948179bb53362e77e6e8057255f2f9d8c9)",
  "iced_futures 0.14.0-dev (git+https://github.com/pop-os/libcosmic.git?rev=148656948179bb53362e77e6e8057255f2f9d8c9)",
@@ -2494,7 +2494,7 @@ version = "0.14.0-dev"
 source = "git+https://github.com/pop-os/libcosmic.git?rev=148656948179bb53362e77e6e8057255f2f9d8c9#148656948179bb53362e77e6e8057255f2f9d8c9"
 dependencies = [
  "bytemuck",
- "cosmic-text 0.14.0",
+ "cosmic-text 0.14.2",
  "iced_graphics 0.14.0-dev (git+https://github.com/pop-os/libcosmic.git?rev=148656948179bb53362e77e6e8057255f2f9d8c9)",
  "kurbo 0.10.4",
  "log",

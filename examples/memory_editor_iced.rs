@@ -1,6 +1,8 @@
 use iced::{Element, Theme};
 use iced_memory_editor::{
-    context::{Content, MemoryEditorContext}, memory_editor::memory_editor, options::MemoryEditorOptions
+    context::{Content, MemoryEditorContext},
+    memory_editor::memory_editor,
+    options::MemoryEditorOptions,
 };
 use rand::Rng;
 use std::ops::Range;
@@ -12,6 +14,7 @@ pub fn main() -> iced::Result {
 }
 
 struct ExampleData {
+    needs_refresh: bool,
     data: [u8; 65536],
     options: MemoryEditorOptions,
 }
@@ -26,14 +29,14 @@ impl Default for ExampleData {
 
         Self {
             data,
+            needs_refresh: false,
             options: MemoryEditorOptions::default(),
         }
     }
 }
 
 #[derive(Debug, Clone, Copy)]
-enum Message {
-}
+enum Message {}
 
 impl MemoryEditorContext for ExampleData {
     fn data(&self, range: Range<usize>) -> Vec<u8> {
@@ -53,9 +56,18 @@ impl MemoryEditorContext for ExampleData {
             *byte = value;
         }
     }
-    
+
     fn write_options(&mut self, options: MemoryEditorOptions) {
         self.options = options;
+    }
+
+    fn refresh_data(&mut self) -> bool {
+        if self.needs_refresh {
+            self.needs_refresh = false;
+            true
+        } else {
+            false
+        }
     }
 }
 
@@ -70,9 +82,7 @@ impl Example {
         Example { content }
     }
 
-    fn update(&mut self, _message: Message) {
-        
-    }
+    fn update(&mut self, _message: Message) {}
 
     fn view(&self) -> Element<Message> {
         memory_editor(&self.content).into()

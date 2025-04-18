@@ -316,7 +316,7 @@ fn draw<'a, Renderer, Context>(
     let bounds = layout.bounds();
     let options = options(content);
 
-    background(renderer, &style, bounds);
+    background(renderer, style, bounds);
 
     let separator_bounds = Rectangle {
         x: bounds.x,
@@ -327,7 +327,7 @@ fn draw<'a, Renderer, Context>(
 
     separator(
         renderer,
-        &style,
+        style,
         separator_bounds,
         separator_bounds.x + state.dimensions.address_separator_x,
     );
@@ -335,7 +335,7 @@ fn draw<'a, Renderer, Context>(
     if options.show_ascii {
         separator(
             renderer,
-            &style,
+            style,
             separator_bounds,
             separator_bounds.x + state.dimensions.ascii_separator_x,
         );
@@ -351,7 +351,7 @@ fn draw<'a, Renderer, Context>(
     {
         row(
             renderer,
-            &style,
+            style,
             Rectangle {
                 x: bounds.x,
                 y: y_offset,
@@ -368,8 +368,8 @@ fn draw<'a, Renderer, Context>(
         y_offset += state.dimensions.char_height;
     }
 
-    bottom_panel(content, tree, renderer, state, &style, bounds, &options);
-    options_panel(tree, renderer, &style, layout, &options);
+    bottom_panel(content, tree, renderer, state, style, bounds, &options);
+    options_panel(tree, renderer, style, layout, &options);
 }
 
 fn update<'a, Context, Message>(
@@ -389,7 +389,7 @@ where
 
     state.update_bounds(&bounds);
 
-    if state.data.is_empty() {
+    if state.data.is_empty() || content.internal.borrow_mut().context.refresh_data() {
         update_data(content, state, options.row_length);
         return iced_core::event::Status::Captured;
     }

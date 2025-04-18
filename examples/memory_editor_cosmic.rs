@@ -59,6 +59,7 @@ impl cosmic::Application for App {
 impl App where Self: cosmic::Application {}
 
 struct ExampleData {
+    needs_refresh: bool,
     data: [u8; 65536],
     options: MemoryEditorOptions,
 }
@@ -73,6 +74,7 @@ impl Default for ExampleData {
 
         Self {
             data,
+            needs_refresh: false,
             options: MemoryEditorOptions::default(),
         }
     }
@@ -99,5 +101,14 @@ impl MemoryEditorContext for ExampleData {
 
     fn write_options(&mut self, options: MemoryEditorOptions) {
         self.options = options;
+    }
+
+    fn refresh_data(&mut self) -> bool {
+        if self.needs_refresh {
+            self.needs_refresh = false;
+            true
+        } else {
+            false
+        }
     }
 }

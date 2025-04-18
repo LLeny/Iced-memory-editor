@@ -7,6 +7,7 @@ pub trait MemoryEditorContext {
     fn write_options(&mut self, options: MemoryEditorOptions);
     fn can_write(&self, address: usize) -> bool;
     fn write(&mut self, address: usize, value: u8);
+    fn refresh_data(&mut self) -> bool;
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -19,21 +20,18 @@ pub enum Action {
 }
 
 pub struct Content<C: MemoryEditorContext> {
-    pub internal: RefCell<Internal<C>>
+    pub internal: RefCell<Internal<C>>,
 }
 
-pub struct Internal<C: MemoryEditorContext>
-{
+pub struct Internal<C: MemoryEditorContext> {
     pub context: C,
 }
 
-impl<C: MemoryEditorContext> Content<C>
-{
+impl<C: MemoryEditorContext> Content<C> {
     pub fn new(context: C) -> Self {
         Self {
-            internal: RefCell::new(Internal {
-                context,
-            })
+            internal: RefCell::new(Internal { context }),
         }
     }
 }
+
